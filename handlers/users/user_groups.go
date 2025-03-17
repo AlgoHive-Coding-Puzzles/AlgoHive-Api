@@ -6,9 +6,11 @@ import (
 	"api/models"
 	"api/utils"
 	"api/utils/permissions"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/xuri/excelize/v2"
 )
 
 // CreateUserAndAttachGroup creates a user and attaches groups to it
@@ -126,4 +128,233 @@ func CreateBulkUsersAndAttachGroup(c *gin.Context) {
 	}
 	
 	c.JSON(http.StatusCreated, users)
+}
+
+// DeleteAllUsersFromGroup deletes all users from a group
+// @Summary Delete all users from a group
+// @Description Delete all users from a group (Owner permission required)
+// @Tags Users
+// @Param group_id path string true "Group ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /user/group/{group_id}/delete [delete]
+// @Security Bearer
+func DeleteAllUsersFromGroup(c *gin.Context) {
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return
+    }
+
+    groupID := c.Param("group_id")
+
+    // Check permissions
+    if !permissions.RolesHavePermission(user.Roles, permissions.OWNER) {
+        respondWithError(c, http.StatusUnauthorized, "User does not have permission to delete users")
+        return
+    }
+
+    // Check that the group exists
+    var group models.Group
+    if err := database.DB.Where("id = ?", groupID).First(&group).Error; err != nil {
+        respondWithError(c, http.StatusNotFound, ErrGroupNotFound)
+        return
+    }
+
+	// Get all users in the group
+	var users []models.User
+	if err := database.DB.Model(&group).Association("Users").Find(&users); err != nil {
+		respondWithError(c, http.StatusInternalServerError, "Failed to retrieve users from group")
+		return
+	}
+	
+	// Delete all the associated users from the group
+	if err := database.DB.Model(&group).Association("Users").Delete(users); err != nil {
+		respondWithError(c, http.StatusInternalServerError, "Failed to delete users from group")
+		return
+	}
+
+    // Delete all user from the users table
+	for _, user := range users {
+		if err := database.DB.Delete(&user).Error; err != nil {
+			respondWithError(c, http.StatusInternalServerError, fmt.Sprintf("Failed to delete user %s %s: %s", user.Firstname, user.Lastname, err.Error()))
+			return
+		}
+	}
+
+
+    c.JSON(http.StatusOK, gin.H{"message": "All users removed from group"})
+}
+
+// ImportUsersFromXLSXToGroup imports users from an XLSX file and attaches them to a group
+// @Summary Import users from XLSX file and attach to a group
+// @Description Upload an XLSX file containing user data and create users with the specified group
+// @Tags Users
+// @Accept multipart/form-data
+// @Produce json
+// @Param group_id path string true "Group ID"
+// @Param file formData file true "XLSX file containing user data"
+// @Success 201 {array} models.User
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /user/group/{group_id}/import [post]
+// @Security Bearer
+func ImportUsersFromXLSXToGroup(c *gin.Context) {
+	user, err := middleware.GetUserFromRequest(c)
+	if err != nil {
+		return
+	}
+
+	groupID := c.Param("group_id")
+
+	// Check permissions
+	if !UserOwnsTargetGroups(user.ID, groupID) && !permissions.RolesHavePermission(user.Roles, permissions.OWNER) {
+		respondWithError(c, http.StatusUnauthorized, "User does not have permission to create users")
+		return
+	}
+
+	// Check that the group exists
+	var group models.Group
+	if err := database.DB.Where("id = ?", groupID).First(&group).Error; err != nil {
+		respondWithError(c, http.StatusNotFound, ErrGroupNotFound)
+		return
+	}
+
+	// Get the uploaded file
+	file, err := c.FormFile("file")
+	if err != nil {
+		respondWithError(c, http.StatusBadRequest, "Failed to get file: "+err.Error())
+		return
+	}
+
+	// Open the file
+	openedFile, err := file.Open()
+	if err != nil {
+		respondWithError(c, http.StatusInternalServerError, "Failed to open file: "+err.Error())
+		return
+	}
+	defer openedFile.Close()
+
+	// Parse the Excel file
+	xlsx, err := excelize.OpenReader(openedFile)
+	if err != nil {
+		respondWithError(c, http.StatusBadRequest, "Failed to parse XLSX file: "+err.Error())
+		return
+	}
+
+	// Process all sheets
+	var users []models.User
+	sheetList := xlsx.GetSheetList()
+
+	// Create temporary password (can be reset later)
+	tempPassword, err := utils.CreateDefaultPassword()
+	if err != nil {
+		respondWithError(c, http.StatusInternalServerError, "Failed to generate password")
+		return
+	}
+	
+	hashedPassword, err := utils.HashPassword(tempPassword)
+	if err != nil {
+		respondWithError(c, http.StatusInternalServerError, ErrFailedToHashPassword)
+		return
+	}
+	
+	for _, sheetName := range sheetList {
+		// Get all rows from the sheet
+		rows, err := xlsx.GetRows(sheetName)
+		if err != nil {
+			respondWithError(c, http.StatusInternalServerError, "Failed to read sheet: "+err.Error())
+			return
+		}
+
+		if len(rows) < 2 { // At least header and one data row
+			continue
+		}
+
+		// Find column indices
+		var lastNameIdx, firstNameIdx, emailIdx int = -1, -1, -1
+		for i, cell := range rows[0] {
+			switch cell {
+			case "Nom":
+				lastNameIdx = i
+			case "Prénom 1", "Prénom":
+				firstNameIdx = i
+			case "E-mail personnel", "E-mail", "Email":
+				emailIdx = i
+			}
+		}
+
+		// Skip if required columns not found
+		if lastNameIdx == -1 || firstNameIdx == -1 || emailIdx == -1 {
+			continue
+		}
+
+		// Process data rows
+		for i := 1; i < len(rows); i++ {
+			row := rows[i]
+			
+			// Skip empty rows
+			if len(row) <= emailIdx || row[emailIdx] == "" {
+				continue
+			}
+
+			// Make sure the row has enough columns
+			if len(row) <= max(lastNameIdx, firstNameIdx, emailIdx) {
+				continue
+			}
+
+			lastName := ""
+			if lastNameIdx < len(row) {
+				lastName = row[lastNameIdx]
+			}
+			
+			firstName := ""
+			if firstNameIdx < len(row) {
+				firstName = row[firstNameIdx]
+			}
+			
+			email := row[emailIdx]
+
+			// Create user object
+			newUser := models.User{
+				Firstname: firstName,
+				Lastname:  lastName,
+				Email:     email,
+				Password:  hashedPassword,
+				Groups:    []*models.Group{&group},
+			}
+
+			users = append(users, newUser)
+		}
+	}
+
+	if len(users) == 0 {
+		respondWithError(c, http.StatusBadRequest, "No valid user data found in the file")
+		return
+	}
+
+	// Create the users in the database
+	for i := range users {
+		if err := database.DB.Create(&users[i]).Error; err != nil {
+			respondWithError(c, http.StatusInternalServerError, fmt.Sprintf("Failed to create user %s %s: %s", users[i].Firstname, users[i].Lastname, err.Error()))
+			return
+		}
+	}
+
+	c.JSON(http.StatusCreated, users)
+}
+
+// Helper function to find maximum value
+func max(values ...int) int {
+	maxVal := values[0]
+	for _, v := range values {
+		if v > maxVal {
+			maxVal = v
+		}
+	}
+	return maxVal
 }

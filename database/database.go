@@ -86,49 +86,66 @@ func Populate() {
         log.Println("Default user admin created")
     }
 
-    // Check if there is no API Environment in the database
-    var catalogsCount int64
-    DB.Model(&models.Catalog{}).Count(&catalogsCount)
-    catalogs := config.BeeApis
-    if catalogsCount == 0 && catalogs != "" {
-        catalogsList := strings.Split(catalogs, ",")
-        for _, catalog := range catalogsList {
-            log.Println("Creating Catalog from API Environment: ", catalog)
-            // Make a GET catalog/name to get the catalog name if it ends up in an error just ignore it
-            resp, err := http.Get(fmt.Sprintf("%s/name", catalog))
-            if err != nil {
-                log.Println("Error while getting the catalog name: ", err)
-                continue
+       // Check if there is no API Environment in the database
+        var countCatalog int64
+        DB.Model(&models.Catalog{}).Count(&countCatalog)
+        
+        beeApis := config.BeeApis
+        if beeApis != "" {    
+            catalogsList := strings.Split(beeApis, ",")
+    
+            // If count is different or we need to sync
+            if countCatalog != int64(len(catalogsList)) {
+                for _, catalogAddress := range catalogsList {
+                    log.Println("Processing Catalog from API Environment: ", catalogAddress)
+                    // Make a GET catalog/name to get the catalog name
+                    resp, err := http.Get(fmt.Sprintf("%s/name", catalogAddress))
+                    if err != nil {
+                        log.Println("Error while getting the catalog name: ", err)
+                        continue
+                    }
+                    defer resp.Body.Close()
+    
+                    if resp.StatusCode != http.StatusOK {
+                        log.Println("Error while getting the catalog name: ", resp.Status)
+                        continue
+                    }
+    
+                    body, err := io.ReadAll(resp.Body)
+                    if err != nil {
+                        log.Println("Error while reading the catalog name: ", err)
+                        continue
+                    }
+    
+                    var result map[string]string
+                    err = json.Unmarshal(body, &result)
+                    if err != nil {
+                        log.Println("Error while unmarshalling the catalog name: ", err)
+                        continue
+                    }
+                    
+                    catalogName, nameOk := result["name"]
+                    catalogDesc, descOk := result["description"]
+                    if !nameOk || !descOk {
+                        log.Println("Error while getting the catalog name or description: key not found")
+                        continue
+                    }
+    
+                    // Check if a catalog with this name already exists
+                    var existingCatalog models.Catalog
+                    if err := DB.Where("name = ?", catalogName).First(&existingCatalog).Error; err == nil {
+                        // Update existing catalog
+                        existingCatalog.Description = catalogDesc
+                        existingCatalog.Address = catalogAddress
+                        DB.Save(&existingCatalog)
+                        log.Println("API Environment updated: ", catalogName)
+                    } else {
+                        // Create new catalog
+                        newCatalog := models.Catalog{Name: catalogName, Description: catalogDesc, Address: catalogAddress}
+                        DB.Create(&newCatalog)
+                        log.Println("API Environment created: ", catalogName)
+                    }
+                }
             }
-            defer resp.Body.Close()
-
-            if resp.StatusCode != http.StatusOK {
-                log.Println("Error while getting the catalog name: ", resp.Status)
-                continue
-            }
-
-            body, err := io.ReadAll(resp.Body)
-            if err != nil {
-                log.Println("Error while reading the catalogc name: ", err)
-                continue
-            }
-
-            var result map[string]string
-            err = json.Unmarshal(body, &result)
-            if err != nil {
-                log.Println("Error while unmarshalling the catalog name: ", err)
-                continue
-            }
-            catatalogName, nameOk := result["name"]
-            catatalogDesc, descOk := result["description"]
-            if !nameOk || !descOk {
-                log.Println("Error while getting the catalog name or description: key not found")
-                continue
-            }
-
-            newCatalog := models.Catalog{Name: catatalogName, Description: catatalogDesc, Address: catalog}
-            DB.Create(&newCatalog)
-            log.Println("API Environment created: ", catatalogName)
         }
-    }
 }

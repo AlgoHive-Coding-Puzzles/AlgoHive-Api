@@ -1,0 +1,37 @@
+# Security Policy
+
+## Reporting a Vulnerability
+
+If you discover a security vulnerability within this project, please follow these steps:
+
+1. **Do not open an issue**. Instead, send an email to [ericphlpp@proton.me](mailto:ericphlpp@proton.me) with the details of the vulnerability.
+2. Include the following information in your email:
+   - A description of the vulnerability.
+   - Steps to reproduce the vulnerability.
+   - Any potential impact it may have.
+   - Any suggested mitigation or fix.
+
+We take all security vulnerabilities seriously and will respond promptly to your report. Thank you for helping to keep this project secure.
+
+## Supported Versions
+
+We currently support the following versions with security updates:
+
+| Version | Supported          |
+| ------- | ------------------ |
+| 1.x     | :white_check_mark: |
+| < 1.0   | :x:                |
+
+## Security Updates
+
+We will release security updates as needed. Please ensure you are using the latest version of the project to benefit from these updates.
+
+## Security Best Practices
+
+To help keep your deployment secure, we recommend the following best practices:
+
+- Regularly update to the latest version of the project.
+- Use strong, unique passwords for all accounts.
+- Regularly review and audit your security settings and configurations.
+
+Thank you for your attention to security and for helping to keep our project safe.

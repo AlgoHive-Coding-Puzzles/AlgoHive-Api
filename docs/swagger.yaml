@@ -1,0 +1,2459 @@
+basePath: /api/v1
+definitions:
+  auth.AuthResponse:
+    properties:
+      blocked:
+        type: boolean
+      email:
+        type: string
+      firstname:
+        type: string
+      groups:
+        items:
+          $ref: '#/definitions/models.Group'
+        type: array
+      last_connected:
+        type: string
+      lastname:
+        type: string
+      permissions:
+        type: integer
+      roles:
+        items:
+          $ref: '#/definitions/models.Role'
+        type: array
+      token:
+        type: string
+      user_id:
+        type: string
+    type: object
+  auth.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.RegisterRequest:
+    properties:
+      email:
+        type: string
+      firstname:
+        type: string
+      lastname:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - firstname
+    - lastname
+    - password
+    type: object
+  catalogs.PuzzleResponse:
+    properties:
+      author:
+        type: string
+      cipher:
+        type: string
+      compressedSize:
+        type: integer
+      createdAt:
+        type: string
+      difficulty:
+        type: string
+      id:
+        type: string
+      language:
+        type: string
+      name:
+        type: string
+      obscure:
+        type: string
+      uncompressedSize:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  catalogs.ThemeResponse:
+    properties:
+      enigmes_count:
+        type: integer
+      name:
+        type: string
+      puzzles:
+        items:
+          $ref: '#/definitions/catalogs.PuzzleResponse'
+        type: array
+      size:
+        type: integer
+    type: object
+  competitions.CompetitionStatsResponse:
+    properties:
+      active_users:
+        type: integer
+      average_score:
+        type: number
+      competition_id:
+        type: string
+      completion_rate:
+        type: number
+      highest_score:
+        type: number
+      title:
+        type: string
+      total_users:
+        type: integer
+    type: object
+  competitions.CreateCompetitionRequest:
+    properties:
+      catalog_id:
+        type: string
+      catalog_theme:
+        type: string
+      description:
+        type: string
+      group_ids:
+        items:
+          type: string
+        type: array
+      show:
+        type: boolean
+      title:
+        type: string
+    required:
+    - catalog_id
+    - catalog_theme
+    - description
+    - title
+    type: object
+  competitions.CreateTryRequest:
+    properties:
+      puzzle_id:
+        type: string
+      puzzle_index:
+        type: integer
+      puzzle_lvl:
+        type: string
+      step:
+        type: integer
+    required:
+    - puzzle_id
+    - puzzle_index
+    - puzzle_lvl
+    - step
+    type: object
+  competitions.UpdateCompetitionRequest:
+    properties:
+      catalog_id:
+        type: string
+      catalog_theme:
+        type: string
+      description:
+        type: string
+      finished:
+        type: boolean
+      show:
+        type: boolean
+      title:
+        type: string
+    type: object
+  competitions.UpdateTryRequest:
+    properties:
+      attempts:
+        type: integer
+      end_time:
+        type: string
+      score:
+        type: number
+    required:
+    - attempts
+    - end_time
+    - score
+    type: object
+  groups.CreateGroupRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      scope_id:
+        type: string
+    required:
+    - name
+    - scope_id
+    type: object
+  groups.UpdateGroupRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  models.Catalog:
+    properties:
+      address:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      scopes:
+        items:
+          $ref: '#/definitions/models.Scope'
+        type: array
+    type: object
+  models.Competition:
+    properties:
+      catalog:
+        $ref: '#/definitions/models.Catalog'
+      catalog_id:
+        type: string
+      catalog_theme:
+        type: string
+      description:
+        type: string
+      finished:
+        type: boolean
+      groups:
+        items:
+          $ref: '#/definitions/models.Group'
+        type: array
+      id:
+        type: string
+      show:
+        type: boolean
+      title:
+        type: string
+      tries:
+        items:
+          $ref: '#/definitions/models.Try'
+        type: array
+    type: object
+  models.Group:
+    properties:
+      competitions:
+        items:
+          $ref: '#/definitions/models.Competition'
+        type: array
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      scope_id:
+        type: string
+      users:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+    type: object
+  models.Role:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        type: integer
+      scopes:
+        items:
+          $ref: '#/definitions/models.Scope'
+        type: array
+      users:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+    type: object
+  models.Scope:
+    properties:
+      catalogs:
+        items:
+          $ref: '#/definitions/models.Catalog'
+        type: array
+      description:
+        type: string
+      groups:
+        items:
+          $ref: '#/definitions/models.Group'
+        type: array
+      id:
+        type: string
+      name:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/models.Role'
+        type: array
+    type: object
+  models.Try:
+    properties:
+      attempts:
+        type: integer
+      competition_id:
+        type: string
+      end_time:
+        type: string
+      id:
+        type: string
+      puzzle_id:
+        type: string
+      puzzle_index:
+        type: integer
+      puzzle_lvl:
+        type: string
+      score:
+        type: number
+      start_time:
+        type: string
+      step:
+        type: integer
+      user_id:
+        type: string
+    type: object
+  models.User:
+    properties:
+      blocked:
+        type: boolean
+      email:
+        type: string
+      firstname:
+        type: string
+      groups:
+        items:
+          $ref: '#/definitions/models.Group'
+        type: array
+      id:
+        type: string
+      last_connected:
+        type: string
+      lastname:
+        type: string
+      password:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/models.Role'
+        type: array
+    type: object
+  roles.CreateRoleRequest:
+    properties:
+      name:
+        type: string
+      permission:
+        type: integer
+      scopes_ids:
+        items:
+          type: string
+        type: array
+    required:
+    - name
+    type: object
+  roles.UpdateRoleRequest:
+    properties:
+      name:
+        type: string
+      permission:
+        type: integer
+      scopes_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  scopes.CreateScopeRequest:
+    properties:
+      catalogs_ids:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - catalogs_ids
+    - name
+    type: object
+  users.PasswordUpdate:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    type: object
+  users.UserIdWithRoles:
+    properties:
+      roles:
+        items:
+          type: string
+        type: array
+      user_id:
+        type: string
+    type: object
+  users.UserWithGroup:
+    properties:
+      email:
+        type: string
+      firstname:
+        type: string
+      groups:
+        items:
+          type: string
+        type: array
+      lastname:
+        type: string
+    type: object
+  users.UserWithRoles:
+    properties:
+      email:
+        type: string
+      firstname:
+        type: string
+      lastname:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+    type: object
+info:
+  contact:
+    email: ericphlpp@proton.me
+    name: AlgoHive Support
+  description: This is the API documentation for the AlgoHive API
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Swagger AlgoHive API
+  version: 1.0.0
+paths:
+  /auth/check:
+    get:
+      consumes:
+      - application/json
+      description: Check if the sent cookie token session is still valid and return
+        user data
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Check if the sent cookie token session is still valid and return user
+        data
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return a JWT token
+      parameters:
+      - description: Login Credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User Login
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Logout a user by invalidating their token
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: User Logout
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: Registration Details
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User Register
+      tags:
+      - Auth
+  /catalogs:
+    get:
+      consumes:
+      - application/json
+      description: Get all Catalogs, only accessible to users with the API_ENV permission
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Catalog'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all Catalogs Catalog
+      tags:
+      - Catalogs
+  /catalogs/{catalogID}/themes:
+    get:
+      consumes:
+      - application/json
+      description: Get all the themes from a single API from it's ID
+      parameters:
+      - description: API ID
+        in: path
+        name: catalogID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/catalogs.ThemeResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all the themes from a single API from it's ID
+      tags:
+      - Catalogs
+  /competitions:
+    get:
+      consumes:
+      - application/json
+      description: Get all competitions, only accessible to users with the COMPETITIONS
+        permission
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Competition'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all competitions
+      tags:
+      - Competitions
+    post:
+      consumes:
+      - application/json
+      description: Create a new competition
+      parameters:
+      - description: Competition to create
+        in: body
+        name: competition
+        required: true
+        schema:
+          $ref: '#/definitions/competitions.CreateCompetitionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Competition'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a competition
+      tags:
+      - Competitions
+  /competitions/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a competition and all related data
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete a competition
+      tags:
+      - Competitions
+    get:
+      consumes:
+      - application/json
+      description: Get a competition by ID
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Competition'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get a competition by ID
+      tags:
+      - Competitions
+    put:
+      consumes:
+      - application/json
+      description: Update an existing competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated competition data
+        in: body
+        name: competition
+        required: true
+        schema:
+          $ref: '#/definitions/competitions.UpdateCompetitionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Competition'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a competition
+      tags:
+      - Competitions
+  /competitions/{id}/finish:
+    put:
+      consumes:
+      - application/json
+      description: Toggle the finished status of a competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Competition'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Finish a competition
+      tags:
+      - Competitions
+  /competitions/{id}/groups:
+    get:
+      consumes:
+      - application/json
+      description: Get all groups that have access to the specified competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Group'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all groups with access to a competition
+      tags:
+      - Competitions
+  /competitions/{id}/groups/{group_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove group access to a competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Competition'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Remove a group from a competition
+      tags:
+      - Competitions
+    post:
+      consumes:
+      - application/json
+      description: Allow users in a group to access a competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Competition'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Add a group to a competition
+      tags:
+      - Competitions
+  /competitions/{id}/statistics:
+    get:
+      consumes:
+      - application/json
+      description: Get statistics for the specified competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/competitions.CompetitionStatsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get competition statistics
+      tags:
+      - Competitions
+  /competitions/{id}/tries:
+    get:
+      consumes:
+      - application/json
+      description: Get all tries for the specified competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Try'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all tries for a competition
+      tags:
+      - Competitions
+    post:
+      consumes:
+      - application/json
+      description: Start a new try for a puzzle in a competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Try details
+        in: body
+        name: try
+        required: true
+        schema:
+          $ref: '#/definitions/competitions.CreateTryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Try'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Start a competition try
+      tags:
+      - Competitions
+  /competitions/{id}/tries/{try_id}:
+    put:
+      consumes:
+      - application/json
+      description: Complete an ongoing try for a puzzle in a competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Try ID
+        in: path
+        name: try_id
+        required: true
+        type: string
+      - description: Try details
+        in: body
+        name: try
+        required: true
+        schema:
+          $ref: '#/definitions/competitions.UpdateTryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Try'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Finish a competition try
+      tags:
+      - Competitions
+  /competitions/{id}/users/{user_id}/tries:
+    get:
+      consumes:
+      - application/json
+      description: Get all tries for a specific user in the specified competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Try'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get user tries for a competition
+      tags:
+      - Competitions
+  /competitions/{id}/visibility:
+    put:
+      consumes:
+      - application/json
+      description: Toggle visibility of a competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Competition'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Toggle visibility of a competition
+      tags:
+      - Competitions
+  /competitions/user:
+    get:
+      consumes:
+      - application/json
+      description: Get all competitions accessible to the current user through their
+        groups
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Competition'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get user accessible competitions
+      tags:
+      - Competitions
+  /groups:
+    get:
+      consumes:
+      - application/json
+      description: Get all groups, only accessible to users with the GROUPS permission
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Group'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all groups
+      tags:
+      - Groups
+    post:
+      consumes:
+      - application/json
+      description: Create a group, only accessible to users with the GROUPS permission
+      parameters:
+      - description: Group to create
+        in: body
+        name: group
+        required: true
+        schema:
+          $ref: '#/definitions/groups.CreateGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Group'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a group
+      tags:
+      - Groups
+  /groups/{group_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a group and cascade delete all users and competitions associated
+        with the group
+      parameters:
+      - description: Group ID
+        in: path
+        name: group_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete a group and cascade delete all users and competitions associated
+        with the group
+      tags:
+      - Groups
+    get:
+      consumes:
+      - application/json
+      description: Get a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: group_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Group'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get a group
+      tags:
+      - Groups
+    put:
+      consumes:
+      - application/json
+      description: Update a group name and description
+      parameters:
+      - description: Group ID
+        in: path
+        name: group_id
+        required: true
+        type: string
+      - description: Group to update
+        in: body
+        name: group
+        required: true
+        schema:
+          $ref: '#/definitions/groups.UpdateGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a group name and description
+      tags:
+      - Groups
+  /groups/{group_id}/users/{user_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a user from a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: group_id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Remove a user from a group
+      tags:
+      - Groups
+    post:
+      consumes:
+      - application/json
+      description: Add a user to a group
+      parameters:
+      - description: Group ID
+        in: path
+        name: group_id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Add a user to a group
+      tags:
+      - Groups
+  /groups/me:
+    get:
+      consumes:
+      - application/json
+      description: Get all the groups that authenticated user has access to
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Group'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all the groups that authenticated user has access to
+      tags:
+      - Groups
+  /groups/scope/{scope_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get all the groups from a given scope and list the users in each
+        group
+      parameters:
+      - description: Scope ID
+        in: path
+        name: scope_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Group'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all the groups from a given scope
+      tags:
+      - Groups
+  /ping:
+    get:
+      description: Répond avec "pong"
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Répond avec "pong"
+      tags:
+      - App
+  /roles:
+    get:
+      consumes:
+      - application/json
+      description: Get all Roles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Role'
+            type: array
+      security:
+      - Bearer: []
+      summary: Get all Roles
+      tags:
+      - Roles
+    post:
+      consumes:
+      - application/json
+      description: Create a new Role
+      parameters:
+      - description: Role Profile
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/roles.CreateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Role'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a new Role
+      tags:
+      - Roles
+  /roles/{role_id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete a role and cascade first to roles_scopes and user_roles
+      parameters:
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Role'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: delete a role
+      tags:
+      - Roles
+    get:
+      consumes:
+      - application/json
+      description: Get a Role by ID
+      parameters:
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Role'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get a Role by ID
+      tags:
+      - Roles
+    put:
+      consumes:
+      - application/json
+      description: Update a Role by ID
+      parameters:
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      - description: Role Update Data
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/roles.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Role'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a Role by ID
+      tags:
+      - Roles
+  /roles/attach/{role_id}/to-user/{user_id}:
+    post:
+      consumes:
+      - application/json
+      description: Attach a Role to a User
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Attach a Role to a User
+      tags:
+      - Roles
+  /roles/detach/{role_id}/from-user/{user_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Detach a Role from a User
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Detach a Role from a User
+      tags:
+      - Roles
+  /scopes:
+    get:
+      consumes:
+      - application/json
+      description: Get all scopes, only accessible to users with the SCOPES permission
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Scope'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all scopes
+      tags:
+      - Scopes
+    post:
+      consumes:
+      - application/json
+      description: Create a scope, only accessible to users with the SCOPES permission
+      parameters:
+      - description: Scope Details
+        in: body
+        name: createScope
+        required: true
+        schema:
+          $ref: '#/definitions/scopes.CreateScopeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Scope'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a scope
+      tags:
+      - Scopes
+  /scopes/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a scope, only accessible to users with the SCOPES permission
+      parameters:
+      - description: Scope ID
+        in: path
+        name: scope_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete a scope
+      tags:
+      - Scopes
+    get:
+      consumes:
+      - application/json
+      description: Get a scope, only accessible to users with the SCOPES permission
+      parameters:
+      - description: Scope ID
+        in: path
+        name: scope_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get a scope
+      tags:
+      - Scopes
+    put:
+      consumes:
+      - application/json
+      description: Update a scope, only accessible to users with the SCOPES permission
+      parameters:
+      - description: Scope ID
+        in: path
+        name: scope_id
+        required: true
+        type: string
+      - description: Scope Details
+        in: body
+        name: updateScope
+        required: true
+        schema:
+          $ref: '#/definitions/scopes.CreateScopeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Scope'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a scope
+      tags:
+      - Scopes
+  /scopes/{scope_id}/roles/{role_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Detach the scope from a role, only accessible to users with the
+        SCOPES permission
+      parameters:
+      - description: Scope ID
+        in: path
+        name: scope_id
+        required: true
+        type: string
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Scope'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Detach the scope from a role
+      tags:
+      - Scopes
+    post:
+      consumes:
+      - application/json
+      description: Attach the scope to a role, only accessible to users with the SCOPES
+        permission
+      parameters:
+      - description: Scope ID
+        in: path
+        name: scope_id
+        required: true
+        type: string
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Scope'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Attach the scope to a role
+      tags:
+      - Scopes
+  /scopes/roles:
+    get:
+      consumes:
+      - application/json
+      description: Get all the scopes that a role has access to, only accessible to
+        users with the SCOPES permission
+      parameters:
+      - collectionFormat: csv
+        description: Roles IDs
+        in: query
+        items:
+          type: string
+        name: roles
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Scope'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all the scopes that a role has access to
+      tags:
+      - Scopes
+  /scopes/user:
+    get:
+      consumes:
+      - application/json
+      description: Get all scopes that the user has access to (based on roles) if
+        the user has the SCOPES permission we return all scopes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Scope'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all scopes that the user has access to
+      tags:
+      - Scopes
+  /user/:
+    get:
+      description: Get all users that the current user has access to from his roles
+        -> scopes -> groups
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+      security:
+      - Bearer: []
+      summary: Get All users that the curren user has access to
+      tags:
+      - Users
+  /user/{id}:
+    delete:
+      description: Delete a user by ID, if user isStaff, required ownership permission
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete User
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update the profile information of the target user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      - description: User Profile
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Update Target User Profile
+      tags:
+      - Users
+  /user/block/{id}:
+    put:
+      description: Toggle the block status of a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Toggle block user
+      tags:
+      - Users
+  /user/group/{group_id}/bulk:
+    post:
+      consumes:
+      - application/json
+      description: Create multiple new users and attach a group to them
+      parameters:
+      - description: Users Profiles
+        in: body
+        name: users
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/models.User'
+          type: array
+      - description: Group ID
+        in: path
+        name: group_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Create Bulk Users and attach a Group
+      tags:
+      - Users
+  /user/groups:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user and attach one or more roles to it
+      parameters:
+      - description: User Profile with Groups
+        in: body
+        name: UserWithGroup
+        required: true
+        schema:
+          $ref: '#/definitions/users.UserWithGroup'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a user and attach one or more groups
+      tags:
+      - Users
+  /user/profile:
+    get:
+      description: Get the profile information of the authenticated user
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get User Profile
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update the profile information of the authenticated user
+      parameters:
+      - description: User Profile
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Update User Profile
+      tags:
+      - Users
+  /user/profile/password:
+    put:
+      consumes:
+      - application/json
+      description: Update the password of the current user
+      parameters:
+      - description: Password Update
+        in: body
+        name: passwords
+        required: true
+        schema:
+          $ref: '#/definitions/users.PasswordUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Update User Password
+      tags:
+      - Users
+  /user/resetpass/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Reset the password of the target user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Reset Target User Password
+      tags:
+      - Users
+  /user/roles:
+    get:
+      description: Get all users that the given roles have access to from their roles
+        -> scopes -> groups -> users
+      parameters:
+      - collectionFormat: csv
+        description: Roles IDs
+        in: query
+        items:
+          type: string
+        name: roles
+        required: true
+        type: array
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+      security:
+      - Bearer: []
+      summary: Get All users that the given roles have access to
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user and attach one or more roles to it
+      parameters:
+      - description: User Profile with Roles
+        in: body
+        name: UserWithRoles
+        required: true
+        schema:
+          $ref: '#/definitions/users.UserWithRoles'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a user and attach one or more roles
+      tags:
+      - Users
+  /user/roles/{userId}:
+    put:
+      consumes:
+      - application/json
+      description: Update the roles of a user
+      parameters:
+      - description: User ID with Roles
+        in: body
+        name: roles
+        required: true
+        schema:
+          $ref: '#/definitions/users.UserIdWithRoles'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Update the roles of a user
+      tags:
+      - Users
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

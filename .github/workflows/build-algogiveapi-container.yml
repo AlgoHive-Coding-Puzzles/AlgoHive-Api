@@ -30,4 +30,4 @@ jobs:
       - name: Build and push Docker image
         run: |
           docker buildx build --push \
-            --tag ghcr.io/algoHive-coding-puzzles/api:latest .
+            --tag ghcr.io/algohive-coding-puzzles/api:latest .

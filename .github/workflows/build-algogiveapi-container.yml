@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "algohive/backend/**"
 
 jobs:
   build-and-deploy:

@@ -56,10 +56,19 @@ func GetAllCompetitions(c *gin.Context) {
 // @Router /competitions/user [get]
 // @Security Bearer
 func GetUserCompetitions(c *gin.Context) {
-	user, err := middleware.GetUserFromRequest(c)
-	if err != nil {
+	userID, exists := c.Get("userID")
+    if !exists {
+		c.JSON(http.StatusOK, []models.Competition{})
 		return
-	}
+    }
+
+    var user models.User
+    result := database.DB.Where("id = ?", userID).Preload("Roles").First(&user)
+    if result.Error != nil {
+        c.JSON(http.StatusOK, []models.Competition{})
+		return
+    }
+
 
 	// If the user has the COMPETITIONS permission or is OWNER, then show all competitions
 	if hasCompetitionPermission(user, permissions.COMPETITIONS) || permissions.IsOwner(user) {

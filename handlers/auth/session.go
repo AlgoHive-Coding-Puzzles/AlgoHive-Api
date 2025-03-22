@@ -85,36 +85,40 @@ func Logout(c *gin.Context) {
 // @Router /auth/check [get]
 // @Security Bearer
 func CheckAuth(c *gin.Context) {
-	// Retrieve the token
-	token, err := getTokenFromRequest(c)
-	if err != nil {
-		respondWithError(c, http.StatusUnauthorized, ErrNoTokenProvided)
-		return
-	}
+    // Retrieve the token
+    token, err := getTokenFromRequest(c)
+    if err != nil {
+        c.JSON(http.StatusOK, gin.H{"valid": false})
+        return
+    }
 
-	// Validate the token
-	claims, err := utils.ValidateToken(token)
-	if err != nil {
-		respondWithError(c, http.StatusUnauthorized, ErrInvalidExpiredToken)
-		return
-	}
+    // Validate the token
+    claims, err := utils.ValidateToken(token)
+    if err != nil {
+        c.JSON(http.StatusOK, gin.H{"valid": false})
+        return
+    }
 
-	// Retrieve user data
-	var user models.User
-	if err := database.DB.Where("id = ?", claims.UserID).Preload("Roles").Preload("Groups").First(&user).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrUserNotFound)
-		return
-	}
+    // Retrieve user data
+    var user models.User
+    if err := database.DB.Where("id = ?", claims.UserID).Preload("Roles").Preload("Groups").First(&user).Error; err != nil {
+        c.JSON(http.StatusOK, gin.H{"valid": false})
+        return
+    }
 
-	c.JSON(http.StatusOK, AuthResponse{
-		UserID:        user.ID,
-		Email:         user.Email,
-		Firstname:     user.Firstname,
-		Lastname:      user.Lastname,
-		LastConnected: user.LastConnected,
-		Blocked:       user.Blocked,
-		Permissions:   permissions.MergeRolePermissions(user.Roles),
-		Roles:         utils.ConvertRoles(user.Roles),
-		Groups:        utils.ConvertGroups(user.Groups),
-	})
+    // If everything is valid, return user data along with valid: true
+    c.JSON(http.StatusOK, gin.H{
+        "valid":        true,
+        "user": AuthResponse{
+            UserID:        user.ID,
+            Email:         user.Email,
+            Firstname:     user.Firstname,
+            Lastname:      user.Lastname,
+            LastConnected: user.LastConnected,
+            Blocked:       user.Blocked,
+            Permissions:   permissions.MergeRolePermissions(user.Roles),
+            Roles:         utils.ConvertRoles(user.Roles),
+            Groups:        utils.ConvertGroups(user.Groups),
+        },
+    })
 }

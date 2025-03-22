@@ -9,12 +9,15 @@ import (
 // RegisterRoutes registers all routes related to competitions
 // r: the RouterGroup to which the routes are added
 func RegisterRoutes(r *gin.RouterGroup) {
+	// Public routes
+	r.GET("/competitions/user", GetUserCompetitions)
+
 	competitions := r.Group("/competitions")
 	competitions.Use(middleware.AuthMiddleware())
 	{
 		// Competition management routes
 		competitions.GET("/", GetAllCompetitions)
-		competitions.GET("/user", GetUserCompetitions)
+		// competitions.GET("/user", GetUserCompetitions)
 		competitions.GET("/:id", GetCompetition)
 		competitions.POST("/", CreateCompetition)
 		competitions.PUT("/:id", UpdateCompetition)

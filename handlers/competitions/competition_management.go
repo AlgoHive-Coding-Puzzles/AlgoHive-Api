@@ -91,7 +91,14 @@ func GetUserCompetitions(c *gin.Context) {
 
 	// Preload associations
 	for i := range competitions {
-		database.DB.Preload("Catalog").Preload("Groups").First(&competitions[i], competitions[i].ID)
+		if competitions[i].ID == "" {
+			continue // Skip if ID is empty
+		}
+		if err := database.DB.Preload("Catalog").Preload("Groups").First(&competitions[i], "id = ?", competitions[i].ID).Error; err != nil {
+			// Log the error for debugging
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to preload competition associations"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, competitions)

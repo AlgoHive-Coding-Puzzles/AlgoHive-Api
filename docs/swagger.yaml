@@ -604,6 +604,91 @@ paths:
       summary: Get all the themes from a single API from it's ID
       tags:
       - Catalogs
+  /catalogs/{catalogID}/themes/{themeID}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of a specific theme from a single API from it's ID
+      parameters:
+      - description: API ID
+        in: path
+        name: catalogID
+        required: true
+        type: string
+      - description: Theme ID
+        in: path
+        name: themeID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/catalogs.ThemeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get details of a specific theme from a single API from it's ID
+      tags:
+      - Catalogs
+  /catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID}:
+    get:
+      consumes:
+      - application/json
+      description: Get the indexed puzzle from a theme, from a catalog
+      parameters:
+      - description: API ID
+        in: path
+        name: catalogID
+        required: true
+        type: string
+      - description: Theme ID
+        in: path
+        name: themeID
+        required: true
+        type: string
+      - description: Puzzle ID
+        in: path
+        name: puzzleID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/catalogs.PuzzleResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get the indexed puzzle from a theme, from a catalog
+      tags:
+      - Catalogs
   /competitions:
     get:
       consumes:

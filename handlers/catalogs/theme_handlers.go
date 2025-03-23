@@ -4,8 +4,8 @@ import (
 	"api/database"
 	"api/models"
 	"encoding/json"
-	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -124,8 +124,6 @@ func GetThemeDetailsFromCatalog(c *gin.Context) {
 
     // Contacter l'API à l'adresse catalog.Address/themes/themeID
     apiURL := catalog.Address + "/theme?name=" + themeID
-
-    log.Printf("Fetching theme details from API: %s", apiURL)
     
     resp, err := http.Get(apiURL)
     if err != nil {
@@ -157,4 +155,75 @@ func GetThemeDetailsFromCatalog(c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, themeDetails)
+}
+
+// GetPuzzleFromThemeCatalog fetch the indexed puzzle from a theme, from a catalog
+// @Summary Get the indexed puzzle from a theme, from a catalog
+// @Description Get the indexed puzzle from a theme, from a catalog
+// @Tags Catalogs
+// @Accept json
+// @Produce json
+// @Param catalogID path string true "API ID"
+// @Param themeID path string true "Theme ID"
+// @Param puzzleID path string true "Puzzle ID"
+// @Success 200 {object} PuzzleResponse
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID} [get]
+// @Security Bearer
+func GetPuzzleFromThemeCatalog(c *gin.Context) {
+    catalogID := c.Param("catalogID")
+    themeID := c.Param("themeID")
+    puzzleID := c.Param("puzzleID")
+
+    // Define a cache key specific to this puzzle's details
+    cacheKey := "catalog_puzzle_details:" + catalogID + ":" + themeID + ":" + puzzleID
+    ctx := c.Request.Context()
+
+    // Try to get puzzle details from Redis cache first
+    cachedPuzzleDetails, err := database.REDIS.Get(ctx, cacheKey).Result()
+    if err == nil {
+        // Cache hit - parse and return the cached puzzle details
+        var puzzleDetails PuzzleResponse
+        if err := json.Unmarshal([]byte(cachedPuzzleDetails), &puzzleDetails); err == nil {
+            c.JSON(http.StatusOK, puzzleDetails)
+            return
+        }
+        // If unmarshaling fails, continue with fetching from API
+    }
+
+    // Cache miss or error - fetch from database and API
+    var catalog models.Catalog
+    if err := database.DB.First(&catalog, "id = ?", catalogID).Error; err != nil {
+        respondWithError(c, http.StatusNotFound, ErrCatalogNotFound)
+        return
+    }
+
+    // Contacter l'API à l'adresse catalog.Address/themes/
+    apiURL := catalog.Address + "/theme?name=" + themeID
+    resp, err := http.Get(apiURL)
+    if err != nil {
+        respondWithError(c, http.StatusInternalServerError, ErrAPIReachFailed)
+        return
+    }
+    defer resp.Body.Close()
+    if resp.StatusCode != http.StatusOK {
+        respondWithError(c, resp.StatusCode, ErrAPIReachFailed)
+        return
+    }
+    var themeDetails ThemeResponse
+    if err := json.NewDecoder(resp.Body).Decode(&themeDetails); err != nil {
+        respondWithError(c, http.StatusInternalServerError, ErrDecodeResponseFailed)
+        return
+    }
+
+    // Récupérer le puzzle dans le thème à l'index donné theme.Puzzles[puzzleID]
+    puzzleIndex, err := strconv.Atoi(puzzleID)
+    if err != nil || puzzleIndex < 0 || puzzleIndex >= len(themeDetails.Puzzles) {
+        respondWithError(c, http.StatusBadRequest, "Invalid puzzle ID")
+        return
+    }
+    var puzzleDetails = themeDetails.Puzzles[puzzleIndex]
+ 
+    c.JSON(http.StatusOK, puzzleDetails)
 }

@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"api/middleware"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,6 +13,6 @@ func RegisterRoutes(r *gin.RouterGroup) {
 		auth.POST("/login", Login)
 		auth.GET("/check", CheckAuth)
 		auth.POST("/register", RegisterUser)
-		auth.POST("/logout", middleware.AuthMiddleware(), Logout)
+		auth.POST("/logout", Logout)
 	}
 }

@@ -61,3 +61,50 @@ func AuthMiddleware() gin.HandlerFunc {
         c.Next()
     }
 }
+
+// Middleware function to set the userId if the request is authenticated, otherwise set to 0
+func SetUserIdMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        // Try to get token from cookie first
+        tokenCookie, err := c.Cookie("auth_token")
+        
+        // If no cookie, try to get from Authorization header as fallback
+        if err != nil {
+            authHeader := c.GetHeader("Authorization")
+            if authHeader == "" {
+                c.Set("userId", 0)
+                return
+            }
+
+            // Check if the header has the format "Bearer token"
+            parts := strings.SplitN(authHeader, " ", 2)
+            if !(len(parts) == 2 && parts[0] == "Bearer") {
+                c.Set("userId", 0)
+                return
+            }
+            
+            tokenCookie = parts[1]
+        }
+
+        // Validate the token
+        claims, err := utils.ValidateToken(tokenCookie)
+        if err != nil {
+            c.Set("userId", 0)
+            return
+        }
+
+        // Check if token is in Redis blacklist (logged out tokens)
+        redisKey := fmt.Sprintf("token:blacklist:%s", tokenCookie)
+        ctx := c.Request.Context()
+        exists, err := database.REDIS.Exists(ctx, redisKey).Result()
+        if err == nil && exists > 0 {
+            c.Set("userId", 0)
+            return
+        }
+
+        // Set user ID in context
+        c.Set("userID", claims.UserID)
+        
+        c.Next()
+    }
+}

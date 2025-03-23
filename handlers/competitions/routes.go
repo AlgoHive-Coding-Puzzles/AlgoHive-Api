@@ -10,7 +10,7 @@ import (
 // r: the RouterGroup to which the routes are added
 func RegisterRoutes(r *gin.RouterGroup) {
 	// Public routes
-	r.GET("/competitions/user", GetUserCompetitions)
+	r.GET("/competitions/user", middleware.SetUserIdMiddleware(), GetUserCompetitions)
 
 	competitions := r.Group("/competitions")
 	competitions.Use(middleware.AuthMiddleware())

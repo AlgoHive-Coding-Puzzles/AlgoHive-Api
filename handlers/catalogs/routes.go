@@ -17,5 +17,7 @@ func RegisterRoutes(r *gin.RouterGroup) {
 		catalogs.GET("/:catalogID/themes/:themeID", GetThemeDetailsFromCatalog)
 		catalogs.GET("/:catalogID/themes/:themeID/puzzles/:puzzleID", GetPuzzleFromThemeCatalog)
 		catalogs.GET("/:catalogID/themes/:themeID/puzzles/:puzzleID/inputs/:inputID", GetPuzzleInputFromThemeCatalog)
+		catalogs.GET("/:catalogID/themes/:themeID/puzzles/:puzzleID/inputs/:inputID/first/:solution", CheckFirstSolutionPuzzleUser)
+		catalogs.GET("/:catalogID/themes/:themeID/puzzles/:puzzleID/inputs/:inputID/second/:solution", CheckSecondSolutionPuzzleUser)
 	}
 }

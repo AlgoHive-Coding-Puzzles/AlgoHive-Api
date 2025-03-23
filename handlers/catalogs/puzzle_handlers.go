@@ -4,6 +4,7 @@ import (
 	"api/database"
 	"api/models"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -104,6 +105,11 @@ func GetPuzzleInputFromThemeCatalog(c *gin.Context) {
     puzzleID := c.Param("puzzleID")
     inputID := c.Param("inputID")
 
+    log.Println("Catalog ID:", catalogID)
+    log.Println("Theme ID:", themeID)
+    log.Println("Puzzle ID:", puzzleID)
+    log.Println("Input ID:", inputID)
+
     // Define a cache key specific to this puzzle input's details
     cacheKey := "catalog_puzzle_input:" + catalogID + ":" + themeID + ":" + puzzleID + ":" + inputID
     ctx := c.Request.Context()
@@ -127,8 +133,10 @@ func GetPuzzleInputFromThemeCatalog(c *gin.Context) {
         return
     }
 
+    log.Println("Catalog address:", catalog.Address)
+
     // Construct the API URL to fetch puzzle input
-    apiURL := catalog.Address + "/puzzle/generate?theme=" + themeID + "&puzzle=" + puzzleID + "&unique_id=" + inputID
+    apiURL := catalog.Address + "/puzzle/generate/input?theme=" + themeID + "&puzzle=" + puzzleID + "&unique_id=" + inputID
     resp, err := http.Get(apiURL)
     if err != nil {
         respondWithError(c, http.StatusInternalServerError, ErrAPIReachFailed)

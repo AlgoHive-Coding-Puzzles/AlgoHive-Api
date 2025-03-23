@@ -303,6 +303,8 @@ definitions:
         type: string
       id:
         type: string
+      last_answer:
+        type: string
       puzzle_id:
         type: string
       puzzle_index:
@@ -687,6 +689,56 @@ paths:
       security:
       - Bearer: []
       summary: Get the indexed puzzle from a theme, from a catalog
+      tags:
+      - Catalogs
+  /catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID}/inputs/{inputID}:
+    get:
+      consumes:
+      - application/json
+      description: Get the input of the indexed puzzle from a theme, from a catalog
+      parameters:
+      - description: API ID
+        in: path
+        name: catalogID
+        required: true
+        type: string
+      - description: Theme ID
+        in: path
+        name: themeID
+        required: true
+        type: string
+      - description: Puzzle ID
+        in: path
+        name: puzzleID
+        required: true
+        type: string
+      - description: Input ID
+        in: path
+        name: inputID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/catalogs.PuzzleResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get the input of the indexed puzzle from a theme, from a catalog
       tags:
       - Catalogs
   /competitions:

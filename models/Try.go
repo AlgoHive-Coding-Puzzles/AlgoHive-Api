@@ -11,6 +11,7 @@ type Try struct {
 	EndTime       *string     `gorm:"type:timestamp;column:end_time" json:"end_time"`
 	Attempts      int         `gorm:"type:integer;not null" json:"attempts"`
 	Score         float64     `gorm:"type:numeric(15,2);not null" json:"score"`
+	LastAnswer    string      `gorm:"type:numeric(15,2);column:last_answer" json:"last_answer"`
 	CompetitionID string      `gorm:"type:uuid;not null;column:competition_id" json:"competition_id"`
 	UserID        string      `gorm:"type:uuid;not null;column:user_id" json:"user_id"`
 	Competition   *Competition `gorm:"foreignKey:CompetitionID" json:"-"`

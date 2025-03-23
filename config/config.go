@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -22,6 +23,7 @@ var (
     RedisPort        string
     RedisPassword    string
     RedisDB          int
+    RedisExpiMin     time.Duration
     JWTSecret        string
     JWTExpiration    int
 )
@@ -42,6 +44,7 @@ func LoadConfig() {
     RedisPort = getEnv("CACHE_PORT", "6379")
     RedisPassword = getEnv("CACHE_PASSWORD", "")
     RedisDB = getEnvAsInt("CACHE_DB", 0)
+    RedisExpiMin = time.Duration(getEnvAsInt("CACHE_EXPI_MIN", 5))
     JWTSecret = getEnv("JWT_SECRET", "your_secret_key")
     JWTExpiration = getEnvAsInt("JWT_EXPIRATION", 86400)
 

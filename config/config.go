@@ -11,6 +11,7 @@ import (
 
 var (
     ApiPort          string
+    Env              string
     AllowedOrigins   string
     DefaultPassword  string
     BeeApis          string
@@ -32,6 +33,7 @@ func LoadConfig() {
     err := godotenv.Load()
 
     ApiPort = getEnv("API_PORT", "8080")
+    Env = getEnv("ENV", "development")
     AllowedOrigins = getEnv("ALLOWED_ORIGINS", "*")
     DefaultPassword = getEnv("DEFAULT_PASSWORD", "password")
     BeeApis = getEnv("BEE_APIS", "http://localhost:5000")

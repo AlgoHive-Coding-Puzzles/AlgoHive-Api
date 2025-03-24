@@ -35,6 +35,14 @@ type ThemeResponse struct {
 	Size         int             `json:"size"`
 }
 
+// GetPuzzleInputRequest represents the request body for fetching puzzle input
+type GetPuzzleInputRequest struct {
+	CatalogID	 string  `json:"catalogId"`
+	ThemeName	 string  `json:"themeName"`
+	PuzzleID 	 string  `json:"puzzleId"`
+	SeedID 		 string  `json:"userId"`
+}
+
 // respondWithError sends a standardized error response
 func respondWithError(c *gin.Context, status int, message string) {
 	c.JSON(status, gin.H{"error": message})

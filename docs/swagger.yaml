@@ -54,6 +54,17 @@ definitions:
     - lastname
     - password
     type: object
+  catalogs.GetPuzzleInputRequest:
+    properties:
+      catalogId:
+        type: string
+      puzzleId:
+        type: string
+      themeName:
+        type: string
+      userId:
+        type: string
+    type: object
   catalogs.PuzzleResponse:
     properties:
       author:
@@ -113,15 +124,15 @@ definitions:
     properties:
       competition_id:
         type: string
+      puzzle_difficulty:
+        type: string
       puzzle_id:
         type: string
       puzzle_index:
         type: integer
-      solution:
-        type: string
-      step:
+      puzzle_step:
         type: integer
-      theme:
+      solution:
         type: string
       user_id:
         type: string
@@ -148,21 +159,16 @@ definitions:
     - description
     - title
     type: object
-  competitions.CreateTryRequest:
+  competitions.InputRequest:
     properties:
+      competition_id:
+        type: string
+      puzzle_difficulty:
+        type: string
       puzzle_id:
         type: string
       puzzle_index:
         type: integer
-      puzzle_lvl:
-        type: string
-      step:
-        type: integer
-    required:
-    - puzzle_id
-    - puzzle_index
-    - puzzle_lvl
-    - step
     type: object
   competitions.UpdateCompetitionRequest:
     properties:
@@ -178,19 +184,6 @@ definitions:
         type: boolean
       title:
         type: string
-    type: object
-  competitions.UpdateTryRequest:
-    properties:
-      attempts:
-        type: integer
-      end_time:
-        type: string
-      score:
-        type: number
-    required:
-    - attempts
-    - end_time
-    - score
     type: object
   groups.CreateGroupRequest:
     properties:
@@ -321,6 +314,8 @@ definitions:
       id:
         type: string
       last_answer:
+        type: string
+      last_move_time:
         type: string
       puzzle_id:
         type: string
@@ -708,32 +703,18 @@ paths:
       summary: Get the indexed puzzle from a theme, from a catalog
       tags:
       - Catalogs
-  /catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID}/inputs/{inputID}:
-    get:
+  /catalogs/puzzle-input:
+    post:
       consumes:
       - application/json
       description: Get the input of the indexed puzzle from a theme, from a catalog
       parameters:
-      - description: API ID
-        in: path
-        name: catalogID
+      - description: Request body
+        in: body
+        name: request
         required: true
-        type: string
-      - description: Theme ID
-        in: path
-        name: themeID
-        required: true
-        type: string
-      - description: Puzzle ID
-        in: path
-        name: puzzleID
-        required: true
-        type: string
-      - description: Input ID
-        in: path
-        name: inputID
-        required: true
-        type: string
+        schema:
+          $ref: '#/definitions/catalogs.GetPuzzleInputRequest'
       produces:
       - application/json
       responses:
@@ -817,6 +798,59 @@ paths:
       security:
       - Bearer: []
       summary: Create a competition
+      tags:
+      - Competitions
+  /competitions/{comptition_id}/puzzles/{puzzle_id}/{puzzle_index}/tries:
+    get:
+      consumes:
+      - application/json
+      description: Get all tries for a specific puzzle in a competition
+      parameters:
+      - description: Competition ID
+        in: path
+        name: comptition_id
+        required: true
+        type: string
+      - description: Puzzle ID
+        in: path
+        name: puzzle_id
+        required: true
+        type: string
+      - description: Puzzle index
+        in: path
+        name: puzzle_index
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Try'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all tries for a specific puzzle in a competition
       tags:
       - Competitions
   /competitions/{id}:
@@ -1163,104 +1197,6 @@ paths:
       summary: Get all tries for a competition
       tags:
       - Competitions
-    post:
-      consumes:
-      - application/json
-      description: Start a new try for a puzzle in a competition
-      parameters:
-      - description: Competition ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Try details
-        in: body
-        name: try
-        required: true
-        schema:
-          $ref: '#/definitions/competitions.CreateTryRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/models.Try'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: Start a competition try
-      tags:
-      - Competitions
-  /competitions/{id}/tries/{try_id}:
-    put:
-      consumes:
-      - application/json
-      description: Complete an ongoing try for a puzzle in a competition
-      parameters:
-      - description: Competition ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Try ID
-        in: path
-        name: try_id
-        required: true
-        type: string
-      - description: Try details
-        in: body
-        name: try
-        required: true
-        schema:
-          $ref: '#/definitions/competitions.UpdateTryRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Try'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: Finish a competition try
-      tags:
-      - Competitions
   /competitions/{id}/users/{user_id}/tries:
     get:
       consumes:
@@ -1338,16 +1274,15 @@ paths:
       summary: Toggle visibility of a competition
       tags:
       - Competitions
-  /competitions/tries:
+  /competitions/answer_puzzle:
     post:
       consumes:
       - application/json
-      description: Create or update a try for a competition and return if the try
-        solution is correct
+      description: Answer a part of a puzzle
       parameters:
       - description: Competition try
         in: body
-        name: try
+        name: competitionTry
         required: true
         schema:
           $ref: '#/definitions/competitions.CompetitionTry'
@@ -1357,8 +1292,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
+            additionalProperties: true
             type: object
         "400":
           description: Bad Request
@@ -1366,21 +1300,64 @@ paths:
             additionalProperties:
               type: string
             type: object
-        "401":
-          description: Unauthorized
+        "403":
+          description: Forbidden
           schema:
             additionalProperties:
               type: string
             type: object
-        "404":
-          description: Not Found
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
             type: object
       security:
       - Bearer: []
-      summary: Create or update a competition try
+      summary: Answer a part of a puzzle
+      tags:
+      - Competitions
+  /competitions/input:
+    post:
+      consumes:
+      - application/json
+      description: Get input from a competition, and create a new try if needed
+      parameters:
+      - description: Input request
+        in: body
+        name: inputRequest
+        required: true
+        schema:
+          $ref: '#/definitions/competitions.InputRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get input from a competition, and create a new try if needed
       tags:
       - Competitions
   /competitions/user:

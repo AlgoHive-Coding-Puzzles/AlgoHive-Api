@@ -17,7 +17,6 @@ func RegisterRoutes(r *gin.RouterGroup) {
 	{
 		// Competition management routes
 		competitions.GET("/", GetAllCompetitions)
-		// competitions.GET("/user", GetUserCompetitions)
 		competitions.GET("/:id", GetCompetition)
 		competitions.POST("/", CreateCompetition)
 		competitions.PUT("/:id", UpdateCompetition)
@@ -32,10 +31,10 @@ func RegisterRoutes(r *gin.RouterGroup) {
 		
 		 // Try management routes
 		competitions.GET("/:id/tries", GetCompetitionTries)
-		competitions.POST("/:id/tries", StartCompetitionTry)
-		competitions.PUT("/:id/tries/:try_id", FinishCompetitionTry)
 		competitions.GET("/:id/users/:user_id/tries", GetUserCompetitionTries)
-		competitions.POST("/tries", NewCompetitionTry)
+		competitions.POST("/input", GetInputFromCompetition)
+		competitions.POST("/answer_puzzle", AnswerPuzzle)
+		competitions.GET("/:id/puzzles/:puzzle_id/:puzzle_index/tries", GetTriesFromCompetitonPuzzle)
 		
 		 // Statistics routes
 		competitions.GET("/:id/statistics", GetCompetitionStatistics)

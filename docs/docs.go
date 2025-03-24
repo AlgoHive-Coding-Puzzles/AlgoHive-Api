@@ -237,6 +237,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/catalogs/puzzle-input": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get the input of the indexed puzzle from a theme, from a catalog",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Get the input of the indexed puzzle from a theme, from a catalog",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/catalogs.GetPuzzleInputRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/catalogs.PuzzleResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/catalogs/{catalogID}/themes": {
             "get": {
                 "security": [
@@ -417,82 +474,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID}/inputs/{inputID}": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Get the input of the indexed puzzle from a theme, from a catalog",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Catalogs"
-                ],
-                "summary": "Get the input of the indexed puzzle from a theme, from a catalog",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "API ID",
-                        "name": "catalogID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Theme ID",
-                        "name": "themeID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Puzzle ID",
-                        "name": "puzzleID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Input ID",
-                        "name": "inputID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/catalogs.PuzzleResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/competitions": {
             "get": {
                 "security": [
@@ -588,14 +569,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/competitions/tries": {
+        "/competitions/answer_puzzle": {
             "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "description": "Create or update a try for a competition and return if the try solution is correct",
+                "description": "Answer a part of a puzzle",
                 "consumes": [
                     "application/json"
                 ],
@@ -605,11 +586,11 @@ const docTemplate = `{
                 "tags": [
                     "Competitions"
                 ],
-                "summary": "Create or update a competition try",
+                "summary": "Answer a part of a puzzle",
                 "parameters": [
                     {
                         "description": "Competition try",
-                        "name": "try",
+                        "name": "competitionTry",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -622,9 +603,7 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "additionalProperties": true
                         }
                     },
                     "400": {
@@ -636,8 +615,8 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -645,8 +624,75 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/competitions/input": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get input from a competition, and create a new try if needed",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Competitions"
+                ],
+                "summary": "Get input from a competition, and create a new try if needed",
+                "parameters": [
+                    {
+                        "description": "Input request",
+                        "name": "inputRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/competitions.InputRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -687,6 +733,87 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/competitions/{comptition_id}/puzzles/{puzzle_id}/{puzzle_index}/tries": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get all tries for a specific puzzle in a competition",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Competitions"
+                ],
+                "summary": "Get all tries for a specific puzzle in a competition",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Competition ID",
+                        "name": "comptition_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Puzzle ID",
+                        "name": "puzzle_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Puzzle index",
+                        "name": "puzzle_index",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Try"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1209,157 +1336,6 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/models.Try"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Start a new try for a puzzle in a competition",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Competitions"
-                ],
-                "summary": "Start a competition try",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Competition ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Try details",
-                        "name": "try",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/competitions.CreateTryRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.Try"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/competitions/{id}/tries/{try_id}": {
-            "put": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Complete an ongoing try for a puzzle in a competition",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Competitions"
-                ],
-                "summary": "Finish a competition try",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Competition ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Try ID",
-                        "name": "try_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Try details",
-                        "name": "try",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/competitions.UpdateTryRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Try"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
                             }
                         }
                     },
@@ -3672,6 +3648,23 @@ const docTemplate = `{
                 }
             }
         },
+        "catalogs.GetPuzzleInputRequest": {
+            "type": "object",
+            "properties": {
+                "catalogId": {
+                    "type": "string"
+                },
+                "puzzleId": {
+                    "type": "string"
+                },
+                "themeName": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
         "catalogs.PuzzleResponse": {
             "type": "object",
             "properties": {
@@ -3762,19 +3755,19 @@ const docTemplate = `{
                 "competition_id": {
                     "type": "string"
                 },
+                "puzzle_difficulty": {
+                    "type": "string"
+                },
                 "puzzle_id": {
                     "type": "string"
                 },
                 "puzzle_index": {
                     "type": "integer"
                 },
-                "solution": {
-                    "type": "string"
-                },
-                "step": {
+                "puzzle_step": {
                     "type": "integer"
                 },
-                "theme": {
+                "solution": {
                     "type": "string"
                 },
                 "user_id": {
@@ -3814,25 +3807,19 @@ const docTemplate = `{
                 }
             }
         },
-        "competitions.CreateTryRequest": {
+        "competitions.InputRequest": {
             "type": "object",
-            "required": [
-                "puzzle_id",
-                "puzzle_index",
-                "puzzle_lvl",
-                "step"
-            ],
             "properties": {
+                "competition_id": {
+                    "type": "string"
+                },
+                "puzzle_difficulty": {
+                    "type": "string"
+                },
                 "puzzle_id": {
                     "type": "string"
                 },
                 "puzzle_index": {
-                    "type": "integer"
-                },
-                "puzzle_lvl": {
-                    "type": "string"
-                },
-                "step": {
                     "type": "integer"
                 }
             }
@@ -3857,25 +3844,6 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
-                }
-            }
-        },
-        "competitions.UpdateTryRequest": {
-            "type": "object",
-            "required": [
-                "attempts",
-                "end_time",
-                "score"
-            ],
-            "properties": {
-                "attempts": {
-                    "type": "integer"
-                },
-                "end_time": {
-                    "type": "string"
-                },
-                "score": {
-                    "type": "number"
                 }
             }
         },
@@ -4075,6 +4043,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "last_answer": {
+                    "type": "string"
+                },
+                "last_move_time": {
                     "type": "string"
                 },
                 "puzzle_id": {

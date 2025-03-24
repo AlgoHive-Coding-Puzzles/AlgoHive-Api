@@ -3,6 +3,7 @@ package database
 import (
 	"api/config"
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/redis/go-redis/v9"
@@ -93,4 +94,30 @@ func RedisDelete(key string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// GetFromCache retrieves data from Redis cache and unmarshals it into the provided target.
+func GetFromCache(ctx context.Context, cacheKey string, target interface{}) (bool, error) {
+    cachedData, err := REDIS.Get(ctx, cacheKey).Result()
+    if err != nil {
+        // Cache miss or error
+        return false, err
+    }
+
+    // Unmarshal the cached data into the target
+    if err := json.Unmarshal([]byte(cachedData), target); err != nil {
+        return false, err
+    }
+
+    // Cache hit
+    return true, nil
+}
+
+// SetToCache stores data in Redis cache.
+func SetToCache(ctx context.Context, cacheKey string, value interface{}) error {
+    data, err := json.Marshal(value)
+    if err != nil {
+        return err
+    }
+    return REDIS.Set(ctx, cacheKey, data, 0).Err()
 }

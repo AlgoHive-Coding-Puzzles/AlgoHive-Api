@@ -1,12 +1,6 @@
 package competitions
 
 import (
-	"api/database"
-	"api/models"
-	"api/services"
-	"fmt"
-	"log"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -67,70 +61,24 @@ type CompetitionStatsResponse struct {
 	HighestScore    float64 `json:"highest_score"`
 }
 
-type CompetitionTry struct {
+type InputRequest struct {
 	CompetitionID   string  `json:"competition_id"`
-	Theme 		    string  `json:"theme"`
-	PuzzleId 	    string  `json:"puzzle_id"`
+	PuzzleID 	    string  `json:"puzzle_id"`
 	PuzzleIndex 	int     `json:"puzzle_index"`
 	PuzzleDifficulty string     `json:"puzzle_difficulty"`
-	Step 		    int     `json:"step"`
+}
+
+type CompetitionTry struct {
+	CompetitionID   string  `json:"competition_id"`
+	PuzzleId 	    string  `json:"puzzle_id"`
+	PuzzleIndex 	int     `json:"puzzle_index"`
+	PuzzleStep 	    int     `json:"puzzle_step"`
+	PuzzleDifficulty string     `json:"puzzle_difficulty"`
 	UserID 		    string  `json:"user_id"`
-	Solution        string  `json:"solution"`
+	Answer        string  `json:"solution"`
 }
 
 // respondWithError envoie une réponse d'erreur standardisée
 func respondWithError(c *gin.Context, status int, message string) {
 	c.JSON(status, gin.H{"error": message})
-}
-
-// getStepURL validates the step and returns the corresponding URL
-func GetStepURL(step int) (string, error) {
-    switch step {
-    case 1:
-        return "/first", nil
-    case 2:
-        return "/second", nil
-    default:
-        return "", fmt.Errorf("invalid step")
-    }
-}
-
-// constructAPIURL builds the API URL for checking the solution
-func ConstructAPIURL(competition models.Competition, req CompetitionTry, stepUrl string) string {
-	address, err := services.GetAddressFromCatalogId(competition.CatalogID)
-	if err != nil {
-		return ""
-	}
-
-    return fmt.Sprintf("%s/puzzle/check%s?theme=%s&puzzle=%s&unique_id=%s&solution=%s",
-		address,
-        stepUrl,
-        competition.CatalogTheme,
-        req.PuzzleId,
-        req.UserID,
-        req.Solution,
-    )
-}
-
-// fetchCompetition validates user access to the competition
-func FetchCompetition(userID, competitionID string) (models.Competition, error) {
-    var competition models.Competition
-    err := database.DB.Raw(`
-        SELECT DISTINCT c.*
-        FROM competitions c
-        JOIN competition_groups cat ON c.id = cat.competition_id
-        JOIN user_groups ug ON cat.group_id = ug.group_id
-        WHERE ug.user_id = ? AND c.id = ? AND c.show = true
-    `, userID, competitionID).Scan(&competition).Error
-
-	log.Printf("Executing query: SELECT DISTINCT c.* FROM competitions c JOIN competition_groups cat ON c.id = cat.competition_id JOIN user_groups ug ON cat.group_id = ug.group_id WHERE ug.user_id = '%s' AND c.id = '%s' AND c.show = true", userID, competitionID)
-	log.Println("Competition ID:", competitionID)
-	log.Println("User ID:", userID)
-	log.Println("Query Error:", err)
-	log.Println("Competition Data:", competition)
-
-    if err != nil || competition.ID == "" {
-        return competition, fmt.Errorf("user does not have access to this competition")
-    }
-    return competition, nil
 }

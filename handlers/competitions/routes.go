@@ -35,6 +35,7 @@ func RegisterRoutes(r *gin.RouterGroup) {
 		competitions.POST("/:id/tries", StartCompetitionTry)
 		competitions.PUT("/:id/tries/:try_id", FinishCompetitionTry)
 		competitions.GET("/:id/users/:user_id/tries", GetUserCompetitionTries)
+		competitions.POST("/tries", NewCompetitionTry)
 		
 		 // Statistics routes
 		competitions.GET("/:id/statistics", GetCompetitionStatistics)

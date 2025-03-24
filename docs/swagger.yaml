@@ -109,6 +109,23 @@ definitions:
       total_users:
         type: integer
     type: object
+  competitions.CompetitionTry:
+    properties:
+      competition_id:
+        type: string
+      puzzle_id:
+        type: string
+      puzzle_index:
+        type: integer
+      solution:
+        type: string
+      step:
+        type: integer
+      theme:
+        type: string
+      user_id:
+        type: string
+    type: object
   competitions.CreateCompetitionRequest:
     properties:
       catalog_id:
@@ -741,120 +758,6 @@ paths:
       summary: Get the input of the indexed puzzle from a theme, from a catalog
       tags:
       - Catalogs
-  /catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID}/inputs/{inputID}/first/{solution}:
-    get:
-      consumes:
-      - application/json
-      description: Check if the submitted solution is the right solution for the first
-        part of the puzzle
-      parameters:
-      - description: API ID
-        in: path
-        name: catalogID
-        required: true
-        type: string
-      - description: Theme ID
-        in: path
-        name: themeID
-        required: true
-        type: string
-      - description: Puzzle ID
-        in: path
-        name: puzzleID
-        required: true
-        type: string
-      - description: Input ID
-        in: path
-        name: inputID
-        required: true
-        type: string
-      - description: Solution ID
-        in: path
-        name: solution
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/catalogs.PuzzleResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: Check if the submitted solution is the right solution for the first
-        part of the puzzle
-      tags:
-      - Catalogs
-  /catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID}/inputs/{inputID}/second/{solution}:
-    get:
-      consumes:
-      - application/json
-      description: Check if the submitted solution is the right solution for the second
-        part of the puzzle
-      parameters:
-      - description: API ID
-        in: path
-        name: catalogID
-        required: true
-        type: string
-      - description: Theme ID
-        in: path
-        name: themeID
-        required: true
-        type: string
-      - description: Puzzle ID
-        in: path
-        name: puzzleID
-        required: true
-        type: string
-      - description: Input ID
-        in: path
-        name: inputID
-        required: true
-        type: string
-      - description: Solution ID
-        in: path
-        name: solution
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/catalogs.PuzzleResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: Check if the submitted solution is the right solution for the second
-        part of the puzzle
-      tags:
-      - Catalogs
   /competitions:
     get:
       consumes:
@@ -1433,6 +1336,51 @@ paths:
       security:
       - Bearer: []
       summary: Toggle visibility of a competition
+      tags:
+      - Competitions
+  /competitions/tries:
+    post:
+      consumes:
+      - application/json
+      description: Create or update a try for a competition and return if the try
+        solution is correct
+      parameters:
+      - description: Competition try
+        in: body
+        name: try
+        required: true
+        schema:
+          $ref: '#/definitions/competitions.CompetitionTry'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Create or update a competition try
       tags:
       - Competitions
   /competitions/user:

@@ -486,172 +486,6 @@
                 }
             }
         },
-        "/catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID}/inputs/{inputID}/first/{solution}": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Check if the submitted solution is the right solution for the first part of the puzzle",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Catalogs"
-                ],
-                "summary": "Check if the submitted solution is the right solution for the first part of the puzzle",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "API ID",
-                        "name": "catalogID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Theme ID",
-                        "name": "themeID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Puzzle ID",
-                        "name": "puzzleID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Input ID",
-                        "name": "inputID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Solution ID",
-                        "name": "solution",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/catalogs.PuzzleResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID}/inputs/{inputID}/second/{solution}": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Check if the submitted solution is the right solution for the second part of the puzzle",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Catalogs"
-                ],
-                "summary": "Check if the submitted solution is the right solution for the second part of the puzzle",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "API ID",
-                        "name": "catalogID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Theme ID",
-                        "name": "themeID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Puzzle ID",
-                        "name": "puzzleID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Input ID",
-                        "name": "inputID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Solution ID",
-                        "name": "solution",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/catalogs.PuzzleResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/competitions": {
             "get": {
                 "security": [
@@ -737,6 +571,75 @@
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/competitions/tries": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Create or update a try for a competition and return if the try solution is correct",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Competitions"
+                ],
+                "summary": "Create or update a competition try",
+                "parameters": [
+                    {
+                        "description": "Competition try",
+                        "name": "try",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/competitions.CompetitionTry"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3843,6 +3746,32 @@
                 },
                 "total_users": {
                     "type": "integer"
+                }
+            }
+        },
+        "competitions.CompetitionTry": {
+            "type": "object",
+            "properties": {
+                "competition_id": {
+                    "type": "string"
+                },
+                "puzzle_id": {
+                    "type": "string"
+                },
+                "puzzle_index": {
+                    "type": "integer"
+                },
+                "solution": {
+                    "type": "string"
+                },
+                "step": {
+                    "type": "integer"
+                },
+                "theme": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         },

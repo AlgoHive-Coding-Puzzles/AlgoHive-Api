@@ -4,7 +4,9 @@ import (
 	"api/database"
 	"api/middleware"
 	"api/models"
+	"api/services"
 	"api/utils/permissions"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -308,4 +310,115 @@ func GetUserCompetitionTries(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, tries)
+}
+
+// [POST] NewCompetitionTry creates or updates a try for a competition and return if the try solution is correct
+// @Summary Create or update a competition try
+// @Description Create or update a try for a competition and return if the try solution is correct
+// @Tags Competitions
+// @Accept json
+// @Produce json
+// @Param try body CompetitionTry true "Competition try"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /competitions/tries [post]
+// @Security Bearer
+func NewCompetitionTry(c *gin.Context) {
+    // Step 1: Authenticate the user
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return
+    }
+
+    // Step 2: Parse the request body
+    var req CompetitionTry
+    if err := c.ShouldBindJSON(&req); err != nil {
+        respondWithError(c, http.StatusBadRequest, ErrInvalidRequest)
+        return
+    }
+
+    // Step 3: Validate user access to the competition
+    competition, err := FetchCompetition(req.UserID, req.CompetitionID)
+    if err != nil {
+        respondWithError(c, http.StatusForbidden, err.Error())
+        return
+    }
+
+    // Step 4: Validate the try step and construct the API URL
+    stepUrl, err := GetStepURL(req.Step)
+    if err != nil {
+        respondWithError(c, http.StatusBadRequest, err.Error())
+        return
+    }
+
+    apiURL := ConstructAPIURL(competition, req, stepUrl)
+
+    // Step 5: Check the solution via the external service
+    result, err := services.CatalogProxyGet(apiURL)
+    if err != nil || result == nil || result["matches"] == nil {
+        respondWithError(c, http.StatusInternalServerError, "Failed to check solution")
+        return
+    }
+
+    isCorrect := result["matches"].(bool)
+
+    // Step 6: Handle the try (create or update)
+    if err := handleTry(user.ID, req, isCorrect); err != nil {
+        respondWithError(c, http.StatusInternalServerError, err.Error())
+        return
+    }
+
+    // Step 7: Respond with the result
+    c.JSON(http.StatusOK, gin.H{
+        "matches": isCorrect,
+    })
+}
+
+// handleTry creates or updates a try based on the request and result
+func handleTry(userID string, req CompetitionTry, isCorrect bool) error {
+    var existingTry models.Try
+
+    // Check if a try already exists
+    err := database.DB.Where("competition_id = ? AND user_id = ? AND puzzle_id = ? AND step = ?",
+        req.CompetitionID, userID, req.PuzzleId, req.Step).First(&existingTry).Error
+
+    if err == nil && existingTry.ID != "" {
+        // Update the existing try
+        if existingTry.EndTime != nil {
+            return fmt.Errorf("try already finished")
+        }
+        existingTry.LastAnswer = req.Solution
+        existingTry.Attempts++
+        if isCorrect {
+            existingTry.Score++
+            now := time.Now().Format(time.RFC3339)
+            existingTry.EndTime = &now
+        }
+        return database.DB.Save(&existingTry).Error
+    }
+
+    // Create a new try
+    newTry := models.Try{
+        PuzzleID:      req.PuzzleId,
+        PuzzleIndex:   req.PuzzleIndex,
+        PuzzleLvl:     req.PuzzleDifficulty,
+        Step:          req.Step,
+        StartTime:     time.Now().Format(time.RFC3339),
+        EndTime:       nil,
+        Attempts:      1,
+        LastAnswer:    req.Solution,
+        Score:         0,
+        CompetitionID: req.CompetitionID,
+        UserID:        userID,
+    }
+
+    if isCorrect {
+        newTry.Score = 1
+        now := time.Now().Format(time.RFC3339)
+        newTry.EndTime = &now
+    }
+
+    return database.DB.Create(&newTry).Error
 }

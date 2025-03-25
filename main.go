@@ -4,6 +4,7 @@ import (
 	"api/config"
 	"api/database"
 	docs "api/docs"
+	"api/middleware"
 	v1 "api/routes/v1"
 
 	"log"
@@ -40,6 +41,10 @@ func main() {
 
     database.InitRedis()
     log.Println("Redis connected")
+    
+    // Start system metrics collection
+    middleware.UpdateSystemMetrics()
+    log.Println("Metrics collection started")
 
     gin.SetMode(gin.ReleaseMode)
     r := gin.Default()
@@ -61,5 +66,6 @@ func main() {
     port := config.ApiPort
     log.Println("Server is running on port: ", port)
     log.Println("Swagger is running on http://localhost:" + port + "/swagger/index.html")
+    log.Println("Metrics are available at http://localhost:" + port + "/api/v1/metrics")
     r.Run(":" + port)
 }

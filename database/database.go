@@ -7,14 +7,17 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"api/config"
+	"api/metrics"
 	"api/models"
 	"api/utils"
 	"api/utils/permissions"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
@@ -26,8 +29,21 @@ var DefaultPassword = "admin"
 func InitDB() {
     dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable TimeZone=Europe/Paris", config.PostgresHost, config.PostgresPort, config.PostgresUser, config.PostgresDB, config.PostgresPassword)
     
+    	// Create a custom logger for GORM that records metrics
+	newLogger := logger.New(
+		log.New(log.Writer(), "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold:             time.Second,
+			LogLevel:                  logger.Info,
+			IgnoreRecordNotFoundError: false,
+			Colorful:                  true,
+		},
+	)
+
     var err error
-    DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+        Logger: newLogger,
+    })
     if err != nil {
         log.Fatal("failed to connect database: ", err)
     }
@@ -47,6 +63,54 @@ func InitDB() {
     if err != nil {
         log.Fatal("failed to migrate database: ", err)
     }
+
+    // Add callback for metrics collection
+	err = DB.Callback().Create().Before("gorm:create").Register("metrics:create_before", func(db *gorm.DB) {
+		db.InstanceSet("start_time", time.Now())
+	})
+	if err != nil {
+		log.Printf("Error registering callback: %v", err)
+	}
+
+	err = DB.Callback().Create().After("gorm:create").Register("metrics:create_after", func(db *gorm.DB) {
+		if startTime, ok := db.InstanceGet("start_time"); ok {
+			metrics.RecordDBOperation("create", db.Statement.Table, startTime.(time.Time))
+		}
+	})
+	if err != nil {
+		log.Printf("Error registering callback: %v", err)
+	}
+
+	// Similar callbacks for Query, Update and Delete operations...
+	// Add for Query
+	DB.Callback().Query().Before("gorm:query").Register("metrics:query_before", func(db *gorm.DB) {
+		db.InstanceSet("start_time", time.Now())
+	})
+	DB.Callback().Query().After("gorm:query").Register("metrics:query_after", func(db *gorm.DB) {
+		if startTime, ok := db.InstanceGet("start_time"); ok {
+			metrics.RecordDBOperation("query", db.Statement.Table, startTime.(time.Time))
+		}
+	})
+
+	// Add for Update
+	DB.Callback().Update().Before("gorm:update").Register("metrics:update_before", func(db *gorm.DB) {
+		db.InstanceSet("start_time", time.Now())
+	})
+	DB.Callback().Update().After("gorm:update").Register("metrics:update_after", func(db *gorm.DB) {
+		if startTime, ok := db.InstanceGet("start_time"); ok {
+			metrics.RecordDBOperation("update", db.Statement.Table, startTime.(time.Time))
+		}
+	})
+
+	// Add for Delete
+	DB.Callback().Delete().Before("gorm:delete").Register("metrics:delete_before", func(db *gorm.DB) {
+		db.InstanceSet("start_time", time.Now())
+	})
+	DB.Callback().Delete().After("gorm:delete").Register("metrics:delete_after", func(db *gorm.DB) {
+		if startTime, ok := db.InstanceGet("start_time"); ok {
+			metrics.RecordDBOperation("delete", db.Statement.Table, startTime.(time.Time))
+		}
+	})
 }
 
 // Populate populates the database with default values if needed

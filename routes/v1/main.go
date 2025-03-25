@@ -10,7 +10,10 @@ import (
 func Register(r *gin.Engine) {
     v1 := r.Group("/api/v1")
 
-	rateLimiter := middleware.NewRateLimiter(100, 100) // 100 requêtes par minute
+	// Add metrics middleware to all routes
+	v1.Use(middleware.MetricsMiddleware())
+	
+	rateLimiter := middleware.NewRateLimiter(100, 150) // 100 requêtes par minute
     v1.Use(middleware.RateLimiterMiddleware(rateLimiter))
 
 	RegisterPingRoutes(v1)
@@ -21,4 +24,7 @@ func Register(r *gin.Engine) {
 	RegisterGroupsRoutes(v1)
 	RegisterRolesRoutes(v1)
 	RegisterCompetitionsRoutes(v1)
+	
+	// Register metrics endpoint
+	RegisterMetricsRoutes(v1)
 }

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"api/metrics"
 	"net/http"
 	"sync"
 	"time"
@@ -77,6 +78,9 @@ func RateLimiterMiddleware(rl *RateLimiter) gin.HandlerFunc {
     return func(c *gin.Context) {
         ip := c.ClientIP()
         if !rl.Allow(ip) {
+            // Record rate limiter rejection in metrics
+            metrics.RateLimiterRejections.WithLabelValues(ip).Inc()
+            
             c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
                 "error": "Too many requests. Please try again later.",
             })

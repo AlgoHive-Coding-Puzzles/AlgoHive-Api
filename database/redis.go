@@ -2,6 +2,7 @@ package database
 
 import (
 	"api/config"
+	"api/metrics"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -101,15 +102,18 @@ func GetFromCache(ctx context.Context, cacheKey string, target interface{}) (boo
     cachedData, err := REDIS.Get(ctx, cacheKey).Result()
     if err != nil {
         // Cache miss or error
+		metrics.CacheMisses.Inc()
         return false, err
     }
 
     // Unmarshal the cached data into the target
     if err := json.Unmarshal([]byte(cachedData), target); err != nil {
+		metrics.CacheMisses.Inc()
         return false, err
     }
 
     // Cache hit
+	metrics.CacheHits.Inc()
     return true, nil
 }
 

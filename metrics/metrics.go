@@ -71,6 +71,22 @@ var (
 			Help: "Number of goroutines",
 		},
 	)
+
+	// CacheHits counts the number of cache hits
+    CacheHits = promauto.NewCounter(
+        prometheus.CounterOpts{
+            Name: "algohive_cache_hits_total",
+            Help: "Total number of cache hits",
+        },
+    )
+
+    // CacheMisses counts the number of cache misses
+    CacheMisses = promauto.NewCounter(
+        prometheus.CounterOpts{
+            Name: "algohive_cache_misses_total", 
+            Help: "Total number of cache misses",
+        },
+    )
 )
 
 // RecordDBOperation records the duration of a database operation

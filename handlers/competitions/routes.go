@@ -35,7 +35,8 @@ func RegisterRoutes(r *gin.RouterGroup) {
 		competitions.POST("/input", GetInputFromCompetition)
 		competitions.POST("/answer_puzzle", AnswerPuzzle)
 		competitions.GET("/:id/puzzles/:puzzle_id/:puzzle_index/tries", GetTriesFromCompetitonPuzzle)
-		
+		competitions.GET("/:id/permission/puzzles/:puzzle_index", UserHasPermissionToViewPuzzle)
+
 		 // Statistics routes
 		competitions.GET("/:id/statistics", GetCompetitionStatistics)
 	}

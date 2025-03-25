@@ -1125,6 +1125,54 @@ paths:
       summary: Add a group to a competition
       tags:
       - Competitions
+  /competitions/{id}/puzzles/{puzzle_index}/permission:
+    get:
+      consumes:
+      - application/json
+      description: Check if the user has permission to view a puzzle
+      parameters:
+      - description: Competition ID
+        in: path
+        name: competition_id
+        required: true
+        type: string
+      - description: Puzzle index
+        in: path
+        name: puzzle_index
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Check if the user has permission to view a puzzle
+      tags:
+      - Competitions
   /competitions/{id}/statistics:
     get:
       consumes:

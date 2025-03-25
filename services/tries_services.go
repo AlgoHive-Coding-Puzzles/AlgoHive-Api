@@ -1,9 +1,11 @@
 package services
 
 import (
+	"api/config"
 	"api/database"
 	"api/models"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -49,6 +51,9 @@ func TriggerPuzzleFirstTry(competition models.Competition, puzzleID string, puzz
 		}
 
 		if err := database.DB.Create(&newTry).Error; err != nil {
+			if (config.Env == "development") {
+				return models.Try{}, nil
+			}
 			return models.Try{}, fmt.Errorf("failed to create new try: %w", err)
 		}
 
@@ -135,4 +140,40 @@ func EndTry(competition models.Competition, puzzleID string, puzzleIndex int, st
 	}
 
 	return existingTry, nil
+}
+
+func GetPuzzleTries(competition models.Competition, puzzleID string, puzzleIndex int, userID string) ([]models.Try, error) {
+	var tries []models.Try
+	err := database.DB.Where("competition_id = ? AND user_id = ? AND puzzle_id = ? AND puzzle_index = ?",
+		competition.ID, userID, puzzleID, puzzleIndex).Find(&tries).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch tries: %w", err)
+	}
+	return tries, nil
+}
+
+// The User has permission to view the puzzle if:
+// 1. The puzzleIndex is 0
+// 2. Or if the puzzle[puzzleIndex-1] is already solved (puzzle solved means that the two tries have ent_time != nil)
+func UserHasPermissionToViewPuzzle(competition models.Competition, puzzleIndex int, UserID string) bool {
+	if puzzleIndex == 0 {
+		return true
+	}
+
+	var tries []models.Try
+	err := database.DB.Where("competition_id = ? AND user_id = ? AND puzzle_index = ?",
+		competition.ID, UserID, puzzleIndex-1).Find(&tries).Error
+	if err != nil {
+		return false
+	}
+
+	log.Printf("Tries: %v", tries)
+
+	for _, try := range tries {
+		if try.EndTime != nil {
+			return true
+		}
+	}
+
+	return false
 }

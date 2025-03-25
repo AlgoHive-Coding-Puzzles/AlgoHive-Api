@@ -7,6 +7,7 @@ import (
 	"api/models"
 	"api/services"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -187,4 +188,52 @@ func GetTriesFromCompetitonPuzzle(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, tries)
+}
+
+// [GET] UserHasPermissionToViewPuzzle
+// @Summary Check if the user has permission to view a puzzle
+// @Description Check if the user has permission to view a puzzle
+// @Tags Competitions
+// @Accept json
+// @Produce json
+// @Param competition_id path string true "Competition ID"
+// @Param puzzle_index path string true "Puzzle index"
+// @Success 200 {object} map[string]bool
+// @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /competitions/{id}/puzzles/{puzzle_index}/permission [get]
+// @Security Bearer
+func UserHasPermissionToViewPuzzle(c *gin.Context) {
+	competitionID := c.Param("id")
+	puzzleIndex := c.Param("puzzle_index")
+
+	if competitionID == "" || puzzleIndex == "" {
+		respondWithError(c, http.StatusBadRequest, "Invalid competition or puzzle ID")
+		return
+	}
+
+	// Step 1: Authenticate the user
+	user, err := middleware.GetUserFromRequest(c)
+	if err != nil {
+		return
+	}
+
+	// Step 2: Get the target Competition
+	var competition models.Competition
+	err = services.GetAccessibleCompetition(user.ID, competitionID, &competition)
+	if err != nil {
+		respondWithError(c, http.StatusForbidden, err.Error())
+		return
+	}
+
+	// Step 3: Check if the user has permission to view the puzzle
+	puzzleIndexInt, err := strconv.Atoi(puzzleIndex)
+	if err != nil {
+		respondWithError(c, http.StatusBadRequest, "Invalid puzzle index")
+		return
+	}
+	hasPermission := services.UserHasPermissionToViewPuzzle(competition, puzzleIndexInt, user.ID)
+
+	c.JSON(http.StatusOK, gin.H{"has_permission": hasPermission})
 }

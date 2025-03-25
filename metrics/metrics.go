@@ -87,6 +87,33 @@ var (
             Help: "Total number of cache misses",
         },
     )
+
+    // SystemCPUUsage tracks CPU usage percentage
+    SystemCPUUsage = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "algohive_system_cpu_usage_percent",
+            Help: "CPU usage percentage by core",
+        },
+        []string{"core"},
+    )
+
+    // SystemDiskUsage tracks disk usage
+    SystemDiskUsage = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "algohive_system_disk_usage_bytes",
+            Help: "Disk usage statistics in bytes",
+        },
+        []string{"device", "mountpoint", "type"}, // type can be "used", "free", "total"
+    )
+
+    // SystemLoadAverage tracks system load averages
+    SystemLoadAverage = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "algohive_system_load_average",
+            Help: "System load average",
+        },
+        []string{"period"}, // "1min", "5min", "15min"
+    )
 )
 
 // RecordDBOperation records the duration of a database operation

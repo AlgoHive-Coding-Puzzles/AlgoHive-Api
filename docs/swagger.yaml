@@ -658,7 +658,7 @@ paths:
       summary: Get details of a specific theme from a single API from it's ID
       tags:
       - Catalogs
-  /catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID}:
+  /catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleIndex}:
     get:
       consumes:
       - application/json

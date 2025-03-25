@@ -405,7 +405,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID}": {
+        "/catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleIndex}": {
             "get": {
                 "security": [
                     {

@@ -21,14 +21,14 @@ import (
 // @Success 200 {object} PuzzleResponse
 // @Failure 401 {object} map[string]string
 // @Failure 404 {object} map[string]string
-// @Router /catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleID} [get]
+// @Router /catalogs/{catalogID}/themes/{themeID}/puzzles/{puzzleIndex} [get]
 // @Security Bearer
 func GetPuzzleFromThemeCatalog(c *gin.Context) {
     catalogID := c.Param("catalogID")
     themeID := c.Param("themeID")
-    puzzleID := c.Param("puzzleID")
+    puzzleIndex := c.Param("puzzleIndex")
 
-    cacheKey := "catalog_puzzle_details:" + catalogID + ":" + themeID + ":" + puzzleID
+    cacheKey := "catalog_puzzle_details:" + catalogID + ":" + themeID + ":" + puzzleIndex
     ctx := c.Request.Context()
 
     // Try to get puzzle details from cache
@@ -52,12 +52,12 @@ func GetPuzzleFromThemeCatalog(c *gin.Context) {
         return
     }
 
-    puzzleIndex, err := strconv.Atoi(puzzleID)
-    if err != nil || puzzleIndex < 0 || puzzleIndex >= len(themeDetails.Puzzles) {
-        respondWithError(c, http.StatusBadRequest, "Invalid puzzle ID")
+    puzzleIndexInt, err := strconv.Atoi(puzzleIndex)
+    if err != nil || puzzleIndexInt < 0 || puzzleIndexInt >= len(themeDetails.Puzzles) {
+        respondWithError(c, http.StatusBadRequest, "Invalid puzzle Index")
         return
     }
-    puzzleDetails = themeDetails.Puzzles[puzzleIndex]
+    puzzleDetails = themeDetails.Puzzles[puzzleIndexInt]
 
     // Cache the puzzle details
     _ = database.SetToCache(ctx, cacheKey, puzzleDetails)

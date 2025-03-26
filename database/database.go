@@ -51,7 +51,7 @@ func InitDB() {
     err = DB.AutoMigrate(
         &models.User{},
         &models.Role{},
-        // &models.Input{},
+        &models.PasswordReset{},
         &models.Catalog{},
         &models.Scope{},
         &models.Group{},

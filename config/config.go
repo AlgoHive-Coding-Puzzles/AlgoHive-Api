@@ -11,6 +11,7 @@ import (
 
 var (
     ApiPort          string
+    ClientUrl        string
     Env              string
     AllowedOrigins   string
     DefaultPassword  string
@@ -27,12 +28,17 @@ var (
     RedisExpiMin     time.Duration
     JWTSecret        string
     JWTExpiration    int
+    MailUsername     string
+    MailPassword     string
+    MailHost        string
+    MailPort        string
 )
 
 func LoadConfig() {
     err := godotenv.Load()
 
     ApiPort = getEnv("API_PORT", "8080")
+    ClientUrl = getEnv("CLIENT_URL", "http://localhost:5173")
     Env = getEnv("ENV", "development")
     AllowedOrigins = getEnv("ALLOWED_ORIGINS", "*")
     DefaultPassword = getEnv("DEFAULT_PASSWORD", "password")
@@ -49,6 +55,10 @@ func LoadConfig() {
     RedisExpiMin = time.Duration(getEnvAsInt("CACHE_EXPI_MIN", 5))
     JWTSecret = getEnv("JWT_SECRET", "your_secret_key")
     JWTExpiration = getEnvAsInt("JWT_EXPIRATION", 86400)
+    MailUsername = getEnv("MAIL_USERNAME", "algohive.dev@gmail.com")
+    MailPassword = getEnv("MAIL_PASSWORD", "password")
+    MailHost = getEnv("MAIL_HOST", "smtp.gmail.com")
+    MailPort = getEnv("MAIL_PORT", "587")
 
     // Only log a warning if .env file couldn't be loaded
     if err != nil {

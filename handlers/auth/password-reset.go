@@ -126,9 +126,8 @@ func ResetPassword(c *gin.Context) {
         return
     }
 
-    // Update user password
     if err := database.DB.Model(&models.User{}).Where("id = ?", resetEntry.UserID).
-        Update("password", hashedPassword).Error; err != nil {
+        Updates(models.User{Password: hashedPassword, HasDefaultPassword: false}).Error; err != nil {
         respondWithError(c, http.StatusInternalServerError, "Failed to update password")
         return
     }

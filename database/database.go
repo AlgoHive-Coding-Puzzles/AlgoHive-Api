@@ -40,10 +40,17 @@ func InitDB() {
 		},
 	)
 
+    var gormConfig *gorm.Config
+    if config.Env == "production" {
+        gormConfig = &gorm.Config{
+            Logger: newLogger,
+        }
+    } else {
+        gormConfig = &gorm.Config{}
+    }
+
     var err error
-    DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-        Logger: newLogger,
-    })
+    DB, err = gorm.Open(postgres.Open(dsn), gormConfig)
     if err != nil {
         log.Fatal("failed to connect database: ", err)
     }

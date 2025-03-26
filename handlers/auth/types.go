@@ -26,8 +26,9 @@ const (
 
 // LoginRequest model for login endpoints
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	Email      string `json:"email" binding:"required,email"`
+	Password   string `json:"password" binding:"required"`
+	RememberMe bool   `json:"rememberMe"`
 }
 
 // RegisterRequest model for registration
@@ -58,15 +59,19 @@ func respondWithError(c *gin.Context, status int, message string) {
 }
 
 // setCookieToken sets the authentication token as a secure HTTP-only cookie
-func setCookieToken(c *gin.Context, token string) {
-	// Set the expiration time to match the JWT validity (usually 24 hours)
-	cookieMaxAge := 24 * 3600 // 24 hours in seconds
+func setCookieToken(c *gin.Context, token string, rememberMe bool) {
+	var maxAge time.Duration
+	if rememberMe {
+		maxAge = 30 * 24 * time.Hour // 30 days
+	} else {
+		maxAge = 1 * 24 * time.Hour // 1 day
+	}
 
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(
 		"auth_token",   // name
 		token,          // value
-		cookieMaxAge,   // max age
+		int(maxAge.Seconds()), // max age in seconds
 		"/",            // path
 		"",             // domain
 		true,           // secure (HTTPS only)

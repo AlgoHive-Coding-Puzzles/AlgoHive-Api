@@ -12,7 +12,7 @@ import (
 )
 
 // createUser creates a new user with basic information
-// firstName, lastName, email: basic user information
+// firstName, lastName, epmail: basic user information
 // returns: the created user and any error
 func createUser(firstName, lastName, email string) (*models.User, error) {
 	var user models.User

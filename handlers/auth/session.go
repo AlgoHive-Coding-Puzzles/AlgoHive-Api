@@ -1,13 +1,11 @@
 package auth
 
 import (
-	"api/config"
 	"api/database"
 	"api/models"
 	"api/utils"
 	"api/utils/permissions"
 	"context"
-	"log"
 	"net/http"
 	"time"
 
@@ -108,13 +106,10 @@ func CheckAuth(c *gin.Context) {
         return
     }
 
-	log.Println(config.DefaultPassword)
-	hasDefaultPassword := utils.CheckPasswordHash(config.DefaultPassword, user.Password)
-
     // If everything is valid, return user data along with valid: true
     c.JSON(http.StatusOK, gin.H{
         "valid":        true,
-		"hasDefaultPassword": hasDefaultPassword,
+		"hasDefaultPassword": user.HasDefaultPassword,
         "user": AuthResponse{
             UserID:        user.ID,
             Email:         user.Email,

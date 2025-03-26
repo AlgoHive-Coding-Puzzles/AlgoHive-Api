@@ -13,6 +13,32 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+// UserGroup fetch the authenticated user's groups
+// @Summary Get the authenticated user's groups
+// @Description Get the authenticated user's groups
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Success 200 {array} models.Group
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /user/groups [get]
+// @Security Bearer
+func GetUserGroups(c *gin.Context) {
+	user, err := middleware.GetUserFromRequest(c)
+	if err != nil {
+		return
+	}
+
+	var groups []models.Group
+	if err := database.DB.Model(user).Association("Groups").Find(&groups); err != nil {
+		respondWithError(c, http.StatusInternalServerError, "Failed to retrieve groups")
+		return
+	}
+
+	c.JSON(http.StatusOK, groups)
+}
+
 // CreateUserAndAttachGroup creates a user and attaches groups to it
 // @Summary Create a user and attach one or more groups
 // @Description Create a new user and attach one or more roles to it

@@ -173,6 +173,7 @@ func ResetUserPassword(c *gin.Context) {
 	}
 
 	userUpdate.Password = password
+	userUpdate.HasDefaultPassword = true
 	
 	if err := database.DB.Save(&userUpdate).Error; err != nil {
 		respondWithError(c, http.StatusInternalServerError, "Failed to update profile")
@@ -218,6 +219,7 @@ func UpdateUserPassword(c *gin.Context) {
 	}
 	
 	user.Password = hashedPassword
+	user.HasDefaultPassword = false
 	
 	if err := database.DB.Save(&user).Error; err != nil {
 		respondWithError(c, http.StatusInternalServerError, "Failed to update password")

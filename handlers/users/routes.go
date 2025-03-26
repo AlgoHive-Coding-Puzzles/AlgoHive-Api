@@ -31,6 +31,7 @@ func RegisterRoutes(r *gin.RouterGroup) {
         
         // User-group relationship routes
         user.POST("/groups", CreateUserAndAttachGroup)
+        user.GET("/groups", GetUserGroups)
         user.POST("/group/:group_id/import", ImportUsersFromXLSXToGroup)
         user.POST("/group/:group_id/bulk", CreateBulkUsersAndAttachGroup)
         user.DELETE("/group/:group_id/delete", DeleteAllUsersFromGroup)

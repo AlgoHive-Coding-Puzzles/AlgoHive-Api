@@ -3256,6 +3256,53 @@ const docTemplate = `{
             }
         },
         "/user/groups": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get the authenticated user's groups",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get the authenticated user's groups",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Group"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -3805,6 +3852,9 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string"
+                },
+                "rememberMe": {
+                    "type": "boolean"
                 }
             }
         },
@@ -4299,6 +4349,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/models.Group"
                     }
+                },
+                "has_default_password": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "string"

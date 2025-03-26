@@ -65,7 +65,7 @@ func RegisterUser(c *gin.Context) {
 	}
 	
 	// Set the token as an HTTP-only cookie
-	setCookieToken(c, token)
+	setCookieToken(c, token, false)
 	
 	c.JSON(http.StatusCreated, AuthResponse{
 		Token:         token,

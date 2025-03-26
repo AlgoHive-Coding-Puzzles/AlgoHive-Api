@@ -33,6 +33,8 @@ definitions:
         type: string
       password:
         type: string
+      rememberMe:
+        type: boolean
     required:
     - email
     - password
@@ -362,6 +364,8 @@ definitions:
         items:
           $ref: '#/definitions/models.Group'
         type: array
+      has_default_password:
+        type: boolean
       id:
         type: string
       last_connected:
@@ -2620,6 +2624,36 @@ paths:
       tags:
       - Users
   /user/groups:
+    get:
+      consumes:
+      - application/json
+      description: Get the authenticated user's groups
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Group'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get the authenticated user's groups
+      tags:
+      - Users
     post:
       consumes:
       - application/json

@@ -459,6 +459,25 @@ definitions:
           type: string
         type: array
     type: object
+  v1.SupportRequest:
+    properties:
+      email:
+        type: string
+      issueType:
+        type: string
+      message:
+        type: string
+      name:
+        type: string
+      subject:
+        type: string
+    required:
+    - email
+    - issueType
+    - message
+    - name
+    - subject
+    type: object
 info:
   contact:
     email: ericphlpp@proton.me
@@ -2370,6 +2389,42 @@ paths:
       summary: Get all scopes that the user has access to
       tags:
       - Scopes
+  /support:
+    post:
+      consumes:
+      - application/json
+      description: Sends a support email with the user's request
+      parameters:
+      - description: Support request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.SupportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Submit a support request
+      tags:
+      - Support
   /user/:
     get:
       description: Get all users that the current user has access to from his roles

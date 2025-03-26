@@ -64,3 +64,45 @@ Subject: Reset Your AlgoHive Password
     msg := []byte(fmt.Sprintf(htmlTemplate, to, resetLink))
     return smtp.SendMail(s.host+":"+s.port, auth, s.username, []string{to}, msg)
 }
+
+// Name, emailadress, issue type, subject, message
+func (s *EmailService) SendSupportEmail(name, email, issueType, subject, message string) error {
+    auth := smtp.PlainAuth("", s.username, s.password, s.host)
+    
+    to := "ericphlpp@proton.me"
+
+    htmlTemplate := strings.TrimSpace(`
+To: %s
+MIME-version: 1.0
+Content-Type: text/html; charset="UTF-8"
+Subject: Support Request from %s
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Request</title>
+</head>
+<body style="background-color: #f9fafb; margin: 0; padding: 0; font-family: Arial, sans-serif;">
+    <table width="100%%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <tr>
+            <td style="background: linear-gradient(to right, #1a1a1a, #2d2d2d); padding: 40px 20px; text-align: center; border-radius: 12px;">
+                <h1 style="color: #ffffff; margin-bottom: 30px; font-size: 24px;">Support Request from %s</h1>
+                <p style="color: #9ca3af; margin-bottom: 30px; font-size: 16px;">Issue Type: %s</p>
+                <p style="color: #9ca3af; margin-bottom: 30px; font-size: 16px;">Subject: %s</p>
+                <p style="color: #9ca3af; margin-bottom: 30px; font-size: 16px;">Message: %s</p>
+                <p style="color: #9ca3af; font-size: 14px;">This is an automated message. Please do not reply.</p>
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: center; padding-top: 20px;">
+                <p style="color: #6b7280; font-size: 14px;">© 2025 AlgoHive. All rights reserved.</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+`)
+    msg := []byte(fmt.Sprintf(htmlTemplate, to, name, name, issueType, subject, message))
+    return smtp.SendMail(s.host+":"+s.port, auth, s.username, []string{to}, msg)
+}

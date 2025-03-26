@@ -2970,6 +2970,61 @@ const docTemplate = `{
                 }
             }
         },
+        "/support": {
+            "post": {
+                "description": "Sends a support email with the user's request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Support"
+                ],
+                "summary": "Submit a support request",
+                "parameters": [
+                    {
+                        "description": "Support request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.SupportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/user/": {
             "get": {
                 "security": [
@@ -4493,6 +4548,33 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v1.SupportRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "issueType",
+                "message",
+                "name",
+                "subject"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "issueType": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
                 }
             }
         }

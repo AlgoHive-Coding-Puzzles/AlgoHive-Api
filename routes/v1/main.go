@@ -17,6 +17,7 @@ func Register(r *gin.Engine) {
     v1.Use(middleware.RateLimiterMiddleware(rateLimiter))
 
 	RegisterPingRoutes(v1)
+	RegisterSupportRoutes(v1)
 	RegisterAuthRoutes(v1)
 	RegisterScopesRoutes(v1)
 	RegisterApisRoutes(v1)

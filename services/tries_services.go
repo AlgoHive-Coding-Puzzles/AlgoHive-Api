@@ -87,6 +87,17 @@ func GetPuzzleFirstTry(competitionID string, puzzleID string, puzzleIndex int, u
 	return existingTry, nil
 }
 
+func GetPuzzleTry(competitionID string, puzzleID string, puzzleIndex int, step int, userID string) (models.Try, error) {
+	// Step 1: Check if a try already exists
+	var existingTry models.Try
+	if err := database.DB.Where("competition_id = ? AND user_id = ? AND puzzle_id = ? AND step = ? AND puzzle_index = ?",
+		competitionID, userID, puzzleID, step, puzzleIndex).First(&existingTry).Error; err != nil {
+		return models.Try{}, fmt.Errorf("failed to fetch existing try: %w", err)
+	}
+
+	return existingTry, nil
+}
+
 func UpdateTry(competition models.Competition, puzzleID string, puzzleIndex int, step int, userID string, answer string) (models.Try, error) {
 	// Step 1: Check if a try already exists
 	var existingTry models.Try

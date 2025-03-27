@@ -98,7 +98,7 @@ func AnswerPuzzle(c *gin.Context) {
 	}
 
 	// Step 4: Get the existing try and check rate limits
-	existingTry, err := services.GetPuzzleFirstTry(competition.ID, req.PuzzleId, req.PuzzleIndex, user.ID)
+	existingTry, err := services.GetPuzzleTry(competition.ID, req.PuzzleId, req.PuzzleIndex, req.PuzzleStep, user.ID)
 	if err != nil {
 		if err.Error() == "record not found" {
 			respondWithError(c, http.StatusBadRequest, "Try not found")

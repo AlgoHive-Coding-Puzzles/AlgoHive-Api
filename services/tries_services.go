@@ -3,9 +3,9 @@ package services
 import (
 	"api/config"
 	"api/database"
+	"api/metrics"
 	"api/models"
 	"fmt"
-	"log"
 	"time"
 
 	"gorm.io/gorm"
@@ -182,8 +182,6 @@ func UserHasPermissionToViewPuzzle(competition models.Competition, puzzleIndex i
 		return false
 	}
 
-	log.Printf("Tries: %v", tries)
-
 	for _, try := range tries {
 		if try.EndTime != nil {
 			return true
@@ -191,4 +189,32 @@ func UserHasPermissionToViewPuzzle(competition models.Competition, puzzleIndex i
 	}
 
 	return false
+}
+
+func CheckRateLimit(try models.Try, config config.RateLimitConfig) (bool, time.Duration) {
+	if try.LastMoveTime == nil {
+		return false, 0
+	}
+
+	lastMove, err := time.Parse(time.RFC3339, *try.LastMoveTime)
+	if err != nil {
+		return false, 0
+	}
+
+	now := time.Now()
+	if try.Attempts >= config.AttemptsThreshold2 {
+		cooldownEnd := lastMove.Add(config.CooldownDuration2)
+		if now.Before(cooldownEnd) {
+			metrics.RateLimiterCooldowns.WithLabelValues("threshold2").Inc()
+			return true, cooldownEnd.Sub(now)
+		}
+	} else if try.Attempts >= config.AttemptsThreshold1 {
+		cooldownEnd := lastMove.Add(config.CooldownDuration1)
+		if now.Before(cooldownEnd) {
+			metrics.RateLimiterCooldowns.WithLabelValues("threshold1").Inc()
+			return true, cooldownEnd.Sub(now)
+		}
+	}
+
+	return false, 0
 }

@@ -45,6 +45,15 @@ var (
 		[]string{"ip"},
 	)
 	
+	// RateLimiterCooldowns counts attempts blocked by cooldown period
+	RateLimiterCooldowns = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "algohive_rate_limiter_cooldowns_total",
+			Help: "Total number of attempts blocked by cooldown period",
+		},
+		[]string{"threshold"}, // "threshold1" or "threshold2"
+	)
+
 	// DatabaseOperationDuration measures database operation duration
 	DatabaseOperationDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{

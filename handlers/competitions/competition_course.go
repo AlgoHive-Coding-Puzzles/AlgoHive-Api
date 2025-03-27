@@ -1,6 +1,7 @@
 package competitions
 
 import (
+	"api/config"
 	"api/database"
 	"api/middleware"
 	"api/models"
@@ -70,6 +71,7 @@ func GetInputFromCompetition(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Failure 403 {object} map[string]string
+// @Failure 429 {object} map[string]interface{}
 // @Failure 500 {object} map[string]string
 // @Router /competitions/answer_puzzle [post]
 // @Security Bearer
@@ -95,13 +97,25 @@ func AnswerPuzzle(c *gin.Context) {
 		return
 	}
 
-	// Step 4: If the user has not downloaded the input yet, it means that the try does not exist
-	if _, err := services.GetPuzzleFirstTry(competition.ID, req.PuzzleId, req.PuzzleIndex, user.ID); err != nil {
+	// Step 4: Get the existing try and check rate limits
+	existingTry, err := services.GetPuzzleFirstTry(competition.ID, req.PuzzleId, req.PuzzleIndex, user.ID)
+	if err != nil {
 		if err.Error() == "record not found" {
 			respondWithError(c, http.StatusBadRequest, "Try not found")
 			return
 		}
 		respondWithError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Check rate limits
+	isLimited, remainingTime := services.CheckRateLimit(existingTry, config.DefaultRateLimitConfig)
+
+	if isLimited {
+		c.JSON(http.StatusTooManyRequests, gin.H{
+			"error": "Rate limit exceeded",
+			"wait_time_seconds": int(remainingTime.Seconds()),
+		})
 		return
 	}
 

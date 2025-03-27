@@ -7,58 +7,73 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 func TriggerPuzzleFirstTry(competition models.Competition, puzzleID string, puzzleIndex int, puzzleLvl string, userID string) (models.Try, error) {
-	// Step 1: Check if a try already exists (avoid raising an error if it doesn't)
-	var exists bool
-	err := database.DB.Model(&models.Try{}).
-		Select("1").
+	// Use a transaction to ensure atomicity and prevent race conditions
+	tx := database.DB.Begin()
+	if tx.Error != nil {
+		return models.Try{}, fmt.Errorf("failed to begin transaction: %w", tx.Error)
+	}
+	
+	// Defer rollback in case of error - will be ignored if successfully committed
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Check if a try already exists with FOR UPDATE locking to prevent concurrent operations
+	var existingTry models.Try
+	err := tx.Set("gorm:query_option", "FOR UPDATE").
 		Where("competition_id = ? AND user_id = ? AND puzzle_id = ? AND step = ? AND puzzle_index = ?",
 			competition.ID, userID, puzzleID, 1, puzzleIndex).
-		Limit(1).
-		Scan(&exists).Error
-	
-	if err != nil {
+		First(&existingTry).Error
+
+	if err == nil {
+		// Try already exists, commit transaction and return it
+		if err := tx.Commit().Error; err != nil {
+			return models.Try{}, fmt.Errorf("failed to commit transaction: %w", err)
+		}
+		return existingTry, nil
+	} else if err != gorm.ErrRecordNotFound {
+		// An actual database error occurred (not just "record not found")
+		tx.Rollback()
 		return models.Try{}, fmt.Errorf("database error: %w", err)
 	}
 
-
-	if exists {
-		// Step 2.A - Return the existing try if it exists
-		var existingTry models.Try
-		if err := database.DB.Where("competition_id = ? AND user_id = ? AND puzzle_id = ? AND step = ?",
-		competition.ID, userID, puzzleID, 1).First(&existingTry).Error; err != nil {
-			return models.Try{}, fmt.Errorf("failed to fetch existing try: %w", err)
-		}
-
-		return existingTry, nil
-	} else {
-		// Step 2.B - Create a new try if it doesn't exist
-		newTry := models.Try{
-			PuzzleID:      puzzleID,
-			PuzzleIndex:   puzzleIndex,
-			PuzzleLvl:     puzzleLvl,
-			Step:          1,
-			StartTime:     time.Now().Format(time.RFC3339),
-			EndTime:       nil,
-			Attempts:      0,
-			LastAnswer:    nil,
-			LastMoveTime:  nil,
-			Score:         0,
-			CompetitionID: competition.ID,
-			UserID:        userID,
-		}
-
-		if err := database.DB.Create(&newTry).Error; err != nil {
-			if (config.Env == "development") {
-				return models.Try{}, nil
-			}
-			return models.Try{}, fmt.Errorf("failed to create new try: %w", err)
-		}
-
-		return newTry, nil
+	// No try exists, create a new one
+	newTry := models.Try{
+		PuzzleID:      puzzleID,
+		PuzzleIndex:   puzzleIndex,
+		PuzzleLvl:     puzzleLvl,
+		Step:          1,
+		StartTime:     time.Now().Format(time.RFC3339),
+		EndTime:       nil,
+		Attempts:      0,
+		LastAnswer:    nil,
+		LastMoveTime:  nil,
+		Score:         0,
+		CompetitionID: competition.ID,
+		UserID:        userID,
 	}
+
+	if err := tx.Create(&newTry).Error; err != nil {
+		tx.Rollback()
+		if config.Env == "development" {
+			return models.Try{}, nil
+		}
+		return models.Try{}, fmt.Errorf("failed to create new try: %w", err)
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return models.Try{}, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return newTry, nil
 }
 
 func GetPuzzleFirstTry(competitionID string, puzzleID string, puzzleIndex int, userID string) (models.Try, error) {

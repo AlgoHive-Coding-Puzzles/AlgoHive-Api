@@ -1,7 +1,6 @@
 package competitions
 
 import (
-	"api/config"
 	"api/database"
 	"api/middleware"
 	"api/models"
@@ -48,16 +47,7 @@ func GetInputFromCompetition(c *gin.Context) {
 	}
 
 	// Step 4: Create a new try if it's needed
-	if _, err := services.TriggerPuzzleFirstTry(competition, inputRequest.PuzzleID, inputRequest.PuzzleIndex, inputRequest.PuzzleDifficulty, user.ID); err != nil {
-		if (config.Env == "development") {
-			// In development mode, web framework will tend to send two requests
-			// to the server, so we need to check if the error is a duplicate
-			respondWithError(c, http.StatusOK, err.Error())
-		} else {
-			respondWithError(c, http.StatusInternalServerError, err.Error())
-		}
-		return
-	}
+	services.TriggerPuzzleFirstTry(competition, inputRequest.PuzzleID, inputRequest.PuzzleIndex, inputRequest.PuzzleDifficulty, user.ID)
 
 	// Step 5: Get the puzzle input
 	ctx := c.Request.Context()

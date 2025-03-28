@@ -277,15 +277,9 @@ func ImportUsersFromXLSXToGroup(c *gin.Context) {
 	sheetList := xlsx.GetSheetList()
 
 	// Create temporary password (can be reset later)
-	tempPassword, err := utils.CreateDefaultPassword()
+	hashedPassword, err := utils.CreateDefaultPassword()
 	if err != nil {
 		respondWithError(c, http.StatusInternalServerError, "Failed to generate password")
-		return
-	}
-	
-	hashedPassword, err := utils.HashPassword(tempPassword)
-	if err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedToHashPassword)
 		return
 	}
 	

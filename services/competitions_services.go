@@ -22,3 +22,12 @@ func GetAccessibleCompetition(userID, competitionID string, competition *models.
 
 	return nil
 }
+
+func CompetitionExists(competitionID string) bool {
+    var count int64
+    err := database.DB.Model(&models.Competition{}).Where("id = ?", competitionID).Count(&count).Error
+    if err != nil {
+        return false
+    }
+    return count > 0
+}

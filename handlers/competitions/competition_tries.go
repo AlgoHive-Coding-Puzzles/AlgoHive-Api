@@ -6,7 +6,6 @@ import (
 	"api/models"
 	"api/services"
 	"api/utils/permissions"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -52,7 +51,6 @@ func GetCompetitionTries(c *gin.Context) {
 	var competition models.Competition
 	if err := services.GetAccessibleCompetition(user.ID, competitionID, &competition); err == nil || hasCompetitionPermission(user, permissions.COMPETITIONS) {
 	// Administrators can see all tries
-	log.Printf("User %s has access to competition %s", user.ID, competitionID)
 		if err := database.DB.Where("competition_id = ?", competitionID).
 			Preload("User.Groups").Find(&tries).Error; err != nil {
 			respondWithError(c, http.StatusInternalServerError, "Failed to fetch tries")

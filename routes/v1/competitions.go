@@ -10,4 +10,7 @@ import (
 // This function serves as a proxy to the dedicated handlers package
 func RegisterCompetitionsRoutes(r *gin.RouterGroup) {
 	competitions.RegisterRoutes(r)
+
+	// WebSocket route for real-time updates
+	r.GET("/competitions/:id/ws", competitions.CompetitionWebSocket)
 }

@@ -4389,6 +4389,9 @@ const docTemplate = `{
                 "step": {
                     "type": "integer"
                 },
+                "user": {
+                    "$ref": "#/definitions/models.User"
+                },
                 "user_id": {
                     "type": "string"
                 }

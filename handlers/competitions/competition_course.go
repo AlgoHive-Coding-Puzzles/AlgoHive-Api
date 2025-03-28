@@ -48,7 +48,7 @@ func GetInputFromCompetition(c *gin.Context) {
 	}
 
 	// Step 4: Create a new try if it's needed
-	services.TriggerPuzzleFirstTry(competition, inputRequest.PuzzleID, inputRequest.PuzzleIndex, inputRequest.PuzzleDifficulty, user.ID)
+	services.TriggerPuzzleFirstTry(competition, inputRequest.PuzzleID, inputRequest.PuzzleIndex, inputRequest.PuzzleDifficulty, user)
 
 	// Step 5: Get the puzzle input
 	ctx := c.Request.Context()
@@ -128,13 +128,13 @@ func AnswerPuzzle(c *gin.Context) {
 
 	// Step 6: Handle the try (create or update)
 	if (!isCorrect) {
-		_, err := services.UpdateTry(competition, req.PuzzleId, req.PuzzleIndex, req.PuzzleStep, user.ID, req.Answer)
+		_, err := services.UpdateTry(competition, req.PuzzleId, req.PuzzleIndex, req.PuzzleStep, user, req.Answer)
 		if err != nil {
 			respondWithError(c, http.StatusInternalServerError, "Failed to update try")
 			return
 		}
 	} else {
-		_, err := services.EndTry(competition, req.PuzzleId, req.PuzzleIndex, req.PuzzleStep, user.ID, req.Answer)
+		_, err := services.EndTry(competition, req.PuzzleId, req.PuzzleIndex, req.PuzzleStep, user, req.Answer)
 		if err != nil {
 			respondWithError(c, http.StatusInternalServerError, "Failed to end try")
 			return

@@ -5,13 +5,14 @@ import (
 	"api/database"
 	"api/metrics"
 	"api/models"
+	"api/realtime"
 	"fmt"
 	"time"
 
 	"gorm.io/gorm"
 )
 
-func TriggerPuzzleFirstTry(competition models.Competition, puzzleID string, puzzleIndex int, puzzleLvl string, userID string) (models.Try, error) {
+func TriggerPuzzleFirstTry(competition models.Competition, puzzleID string, puzzleIndex int, puzzleLvl string, user models.User) (models.Try, error) {
 	// Use a transaction to ensure atomicity and prevent race conditions
 	tx := database.DB.Begin()
 	if tx.Error != nil {
@@ -29,7 +30,7 @@ func TriggerPuzzleFirstTry(competition models.Competition, puzzleID string, puzz
 	var existingTry models.Try
 	err := tx.Set("gorm:query_option", "FOR UPDATE").
 		Where("competition_id = ? AND user_id = ? AND puzzle_id = ? AND step = ? AND puzzle_index = ?",
-			competition.ID, userID, puzzleID, 1, puzzleIndex).
+			competition.ID, user.ID, puzzleID, 1, puzzleIndex).
 		First(&existingTry).Error
 
 	if err == nil {
@@ -57,7 +58,7 @@ func TriggerPuzzleFirstTry(competition models.Competition, puzzleID string, puzz
 		LastMoveTime:  nil,
 		Score:         0,
 		CompetitionID: competition.ID,
-		UserID:        userID,
+		UserID:        user.ID,
 	}
 
 	if err := tx.Create(&newTry).Error; err != nil {
@@ -67,6 +68,14 @@ func TriggerPuzzleFirstTry(competition models.Competition, puzzleID string, puzz
 		}
 		return models.Try{}, fmt.Errorf("failed to create new try: %w", err)
 	}
+
+	newTry.User = &user
+
+	realtime.BroadcastTryUpdate(realtime.TryUpdate{
+		CompetitionID: newTry.CompetitionID,
+		Try:           newTry,
+		UpdateType:    "new",
+	})
 
 	// Commit the transaction
 	if err := tx.Commit().Error; err != nil {
@@ -98,11 +107,11 @@ func GetPuzzleTry(competitionID string, puzzleID string, puzzleIndex int, step i
 	return existingTry, nil
 }
 
-func UpdateTry(competition models.Competition, puzzleID string, puzzleIndex int, step int, userID string, answer string) (models.Try, error) {
+func UpdateTry(competition models.Competition, puzzleID string, puzzleIndex int, step int, user models.User, answer string) (models.Try, error) {
 	// Step 1: Check if a try already exists
 	var existingTry models.Try
 	if err := database.DB.Where("competition_id = ? AND user_id = ? AND puzzle_id = ? AND step = ? AND puzzle_index = ?",
-		competition.ID, userID, puzzleID, step, puzzleIndex).First(&existingTry).Error; err != nil {
+		competition.ID, user.ID, puzzleID, step, puzzleIndex).First(&existingTry).Error; err != nil {
 		return models.Try{}, fmt.Errorf("failed to fetch existing try: %w", err)
 	}
 
@@ -118,14 +127,23 @@ func UpdateTry(competition models.Competition, puzzleID string, puzzleIndex int,
 		return models.Try{}, fmt.Errorf("failed to update existing try: %w", err)
 	}
 
+	existingTry.User = &user
+
+	// Broadcast the updated try to WebSocket clients
+	realtime.BroadcastTryUpdate(realtime.TryUpdate{
+		CompetitionID: existingTry.CompetitionID,
+		Try:           existingTry,
+		UpdateType:    "update",
+	})
+
 	return existingTry, nil
 }
 
-func EndTry(competition models.Competition, puzzleID string, puzzleIndex int, step int, userID string, answer string) (models.Try, error) {
+func EndTry(competition models.Competition, puzzleID string, puzzleIndex int, step int, user models.User, answer string) (models.Try, error) {
 	// Step 1: Check if a try already exists
 	var existingTry models.Try
 	if err := database.DB.Where("competition_id = ? AND user_id = ? AND puzzle_id = ? AND step = ? AND puzzle_index = ?",
-		competition.ID, userID, puzzleID, step, puzzleIndex).First(&existingTry).Error; err != nil {
+		competition.ID, user.ID, puzzleID, step, puzzleIndex).First(&existingTry).Error; err != nil {
 		return models.Try{}, fmt.Errorf("failed to fetch existing try: %w", err)
 	}
 
@@ -144,6 +162,14 @@ func EndTry(competition models.Competition, puzzleID string, puzzleIndex int, st
 		return models.Try{}, fmt.Errorf("failed to update existing try: %w", err)
 	}
 
+	existingTry.User = &user
+
+	realtime.BroadcastTryUpdate(realtime.TryUpdate{
+		CompetitionID: existingTry.CompetitionID,
+		Try:           existingTry,
+		UpdateType:    "update",
+	})
+
 	// Step 3: Create a new try for the next step if it's the first step
 	if step == 1 {
 		newTry := models.Try{
@@ -158,11 +184,19 @@ func EndTry(competition models.Competition, puzzleID string, puzzleIndex int, st
 			LastMoveTime:  nil,
 			Score:         0,
 			CompetitionID: competition.ID,
-			UserID:        userID,
+			UserID:        user.ID,
 		}
 		if err := database.DB.Create(&newTry).Error; err != nil {
 			return models.Try{}, fmt.Errorf("failed to create new try: %w", err)
 		}
+
+		newTry.User = &user
+
+		realtime.BroadcastTryUpdate(realtime.TryUpdate{
+			CompetitionID: newTry.CompetitionID,
+			Try:           newTry,
+			UpdateType:    "new",
+		})
 	}
 
 	return existingTry, nil

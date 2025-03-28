@@ -4,7 +4,9 @@ import (
 	"api/database"
 	"api/middleware"
 	"api/models"
+	"api/services"
 	"api/utils/permissions"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -47,17 +49,19 @@ func GetCompetitionTries(c *gin.Context) {
 
 	// Check if user has permission to see all tries or only their own
 	var tries []models.Try
-	if hasCompetitionPermission(user, permissions.COMPETITIONS) {
-		// Administrators can see all tries
+	var competition models.Competition
+	if err := services.GetAccessibleCompetition(user.ID, competitionID, &competition); err == nil || hasCompetitionPermission(user, permissions.COMPETITIONS) {
+	// Administrators can see all tries
+	log.Printf("User %s has access to competition %s", user.ID, competitionID)
 		if err := database.DB.Where("competition_id = ?", competitionID).
-			Preload("User").Find(&tries).Error; err != nil {
+			Preload("User.Groups").Find(&tries).Error; err != nil {
 			respondWithError(c, http.StatusInternalServerError, "Failed to fetch tries")
 			return
 		}
 	} else {
 		// Normal users can only see their own tries
 		if err := database.DB.Where("competition_id = ? AND user_id = ?", 
-			competitionID, user.ID).Find(&tries).Error; err != nil {
+			competitionID, user.ID).Preload("User.Groups").Find(&tries).Error; err != nil {
 			respondWithError(c, http.StatusInternalServerError, "Failed to fetch tries")
 			return
 		}
@@ -170,14 +174,14 @@ func GetUserCompetitionTries(c *gin.Context) {
 	targetUserID := c.Param("user_id")
 
 	// Check if user has permission to view others' tries
-	if user.ID != targetUserID && !hasCompetitionPermission(user, permissions.COMPETITIONS) {
+	if user.ID != targetUserID && !hasCompetitionPermission(user, permissions.COMPETITIONS)  {
 		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionViewTries)
 		return
 	}
 
 	var tries []models.Try
 	if err := database.DB.Where("competition_id = ? AND user_id = ?", 
-		competitionID, targetUserID).Find(&tries).Error; err != nil {
+		competitionID, targetUserID).Preload("User.Groups").Find(&tries).Error; err != nil {
 		respondWithError(c, http.StatusInternalServerError, "Failed to fetch tries")
 		return
 	}

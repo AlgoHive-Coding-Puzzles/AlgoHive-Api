@@ -16,5 +16,5 @@ type Try struct {
     LastMoveTime  *string     `gorm:"type:timestamp;column:last_move_time" json:"last_move_time"`
     LastAnswer    *string     `gorm:"type:numeric(15,2);column:last_answer" json:"last_answer"`
     Competition   *Competition `gorm:"foreignKey:CompetitionID" json:"-"`
-    User          *User        `gorm:"foreignKey:UserID" json:"-"`
+    User          *User        `gorm:"foreignKey:UserID" json:"user"`
 }

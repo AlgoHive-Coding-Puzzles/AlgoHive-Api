@@ -10,7 +10,7 @@ const (
 	ErrGroupNotFound            = "Group not found"
 	ErrCatalogNotFound          = "API environment not found"
 	ErrNoPermissionView         = "User does not have permission to view competitions"
-	ErrNoPermissionCreate       = "User does not have permission to create competitions"
+	ErrNoPermissionCreate       = "User does not haveCompetitionStatsResponse permission to create competitions"
 	ErrNoPermissionUpdate       = "User does not have permission to update competitions"
 	ErrNoPermissionDelete       = "User does not have permission to delete competitions"
 	ErrNoPermissionManageGroups = "User does not have permission to manage competition groups"
@@ -56,7 +56,6 @@ type CompetitionStatsResponse struct {
 	Title           string `json:"title"`
 	TotalUsers      int    `json:"total_users"`
 	ActiveUsers     int    `json:"active_users"`
-	CompletionRate  float64 `json:"completion_rate"`
 	AverageScore    float64 `json:"average_score"`
 	HighestScore    float64 `json:"highest_score"`
 }

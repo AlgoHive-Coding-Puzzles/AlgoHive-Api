@@ -81,72 +81,101 @@ func GetCompetitionTries(c *gin.Context) {
 // @Router /competitions/{id}/statistics [get]
 // @Security Bearer
 func GetCompetitionStatistics(c *gin.Context) {
-	user, err := middleware.GetUserFromRequest(c)
-	if err != nil {
-		return
-	}
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return
+    }
 
-	competitionID := c.Param("id")
+    competitionID := c.Param("id")
 
-	// Check if user has access to the competition
-	if !userHasAccessToCompetition(user.ID, competitionID) && !hasCompetitionPermission(user, permissions.COMPETITIONS) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
-		return
-	}
+    // Check if user has access to the competition
+    if !userHasAccessToCompetition(user.ID, competitionID) && !hasCompetitionPermission(user, permissions.COMPETITIONS) {
+        respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
+        return
+    }
 
-	var competition models.Competition
-	if err := database.DB.First(&competition, "id = ?", competitionID).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
-		return
-	}
+    var competition models.Competition
+    if err := database.DB.First(&competition, "id = ?", competitionID).Error; err != nil {
+        respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
+        return
+    }
 
-	// Calculate statistics
-	var totalUsers int64
-	var activeUsers int64
-	var completionRate float64
-	var averageScore float64
-	var highestScore float64
+    // Get user statistics with a single SQL query
+    type UserStat struct {
+        UserID            string  `gorm:"column:user_id"`
+        Firstname         string  `gorm:"column:firstname"`
+        TotalScore        float64 `gorm:"column:total_score"`
+        HighestPuzzleIndex int    `gorm:"column:highest_puzzle_index"`
+        TotalAttempts     int     `gorm:"column:total_attempts"`
+        FirstAction       string  `gorm:"column:first_action"`
+        LastAction        string  `gorm:"column:last_action"`
+    }
 
-	// Total number of users who have at least one try
-	database.DB.Model(&models.Try{}).
-		Select("COUNT(DISTINCT user_id)").
-		Where("competition_id = ?", competitionID).
-		Count(&totalUsers)
+    var userStats []UserStat
+    query := `
+        SELECT
+            t.user_id,
+            u.firstname,
+            SUM(t.score) AS total_score,
+            MAX(t.puzzle_index) AS highest_puzzle_index,
+            SUM(t.attempts) AS total_attempts,
+            MIN(t.start_time) AS first_action,
+            MAX(COALESCE(t.end_time, t.last_move_time)) AS last_action
+        FROM
+            tries t
+        JOIN
+            users u ON t.user_id = u.id
+        WHERE
+            t.competition_id = ?
+        GROUP BY
+            t.user_id, u.firstname
+        ORDER BY
+            total_score DESC,
+            highest_puzzle_index DESC,
+            first_action ASC
+    `
 
-	// Number of active users (who have at least one completed try)
-	database.DB.Model(&models.Try{}).
-		Select("COUNT(DISTINCT user_id)").
-		Where("competition_id = ? AND end_time IS NOT NULL", competitionID).
-		Count(&activeUsers)
+    if err := database.DB.Raw(query, competitionID).Scan(&userStats).Error; err != nil {
+        respondWithError(c, http.StatusInternalServerError, "Failed to fetch statistics")
+        return
+    }
 
-	// Calculate completion rate, average score, and highest score
-	if totalUsers > 0 {
-		completionRate = float64(activeUsers) / float64(totalUsers) * 100
-		
-		// Average score
-		database.DB.Model(&models.Try{}).
-			Select("COALESCE(AVG(score), 0)").
-			Where("competition_id = ? AND end_time IS NOT NULL", competitionID).
-			Scan(&averageScore)
-		
-		// Highest score
-		database.DB.Model(&models.Try{}).
-			Select("COALESCE(MAX(score), 0)").
-			Where("competition_id = ? AND end_time IS NOT NULL", competitionID).
-			Scan(&highestScore)
-	}
+    // Calculate overall statistics from the user data
+    totalUsers := len(userStats)
+    activeUsers := 0
+    var totalScore float64
+    var highestScore float64
 
-	stats := CompetitionStatsResponse{
-		CompetitionID:  competitionID,
-		Title:          competition.Title,
-		TotalUsers:     int(totalUsers),
-		ActiveUsers:    int(activeUsers),
-		CompletionRate: completionRate,
-		AverageScore:   averageScore,
-		HighestScore:   highestScore,
-	}
+    for _, stat := range userStats {
+        if stat.TotalScore > 0 {
+            activeUsers++
+            totalScore += stat.TotalScore
+            if stat.TotalScore > highestScore {
+                highestScore = stat.TotalScore
+            }
+        }
+    }
 
-	c.JSON(http.StatusOK, stats)
+    // Calculate averages and rates
+    var averageScore float64
+
+    if totalUsers > 0 {
+        if activeUsers > 0 {
+            averageScore = totalScore / float64(activeUsers)
+        }
+    }
+
+    // Create the response
+    stats := CompetitionStatsResponse{
+        CompetitionID:  competitionID,
+        Title:          competition.Title,
+        TotalUsers:     totalUsers,
+        ActiveUsers:    activeUsers,
+        AverageScore:   averageScore,
+        HighestScore:   highestScore,
+    }
+
+    c.JSON(http.StatusOK, stats)
 }
 
 // GetUserCompetitionTries retrieves all tries for a user in a competition

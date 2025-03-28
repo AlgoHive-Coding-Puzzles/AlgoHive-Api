@@ -131,8 +131,6 @@ definitions:
         type: number
       competition_id:
         type: string
-      completion_rate:
-        type: number
       highest_score:
         type: number
       title:
@@ -2546,6 +2544,38 @@ paths:
       security:
       - Bearer: []
       summary: Toggle block user
+      tags:
+      - Users
+  /user/bulk:
+    delete:
+      description: Bulk delete users by IDs
+      parameters:
+      - description: User IDs
+        in: body
+        name: ids
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Bulk Delete Users
       tags:
       - Users
   /user/group/{group_id}/bulk:

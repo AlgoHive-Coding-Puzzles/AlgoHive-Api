@@ -181,6 +181,71 @@ func DeleteUser(c *gin.Context) {
     c.Status(http.StatusNoContent)
 }
 
+// BulkDeleteUsers deletes multiple users by IDs
+// @Summary Bulk Delete Users
+// @Description Bulk delete users by IDs
+// @Tags Users
+// @Param ids body []string true "User IDs"
+// @Success 204
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /user/bulk [delete]
+// @Security Bearer
+func BulkDeleteUsers(c *gin.Context) {
+	// Do it the most efficient way possible
+	var userIDs []string
+	if err := c.ShouldBindJSON(&userIDs); err != nil {
+		respondWithError(c, http.StatusBadRequest, ErrInvalidUserIDs)
+		return
+	}
+	if len(userIDs) == 0 {
+		respondWithError(c, http.StatusBadRequest, ErrEmptyUserIDs)
+		return
+	}
+	user, err := middleware.GetUserFromRequest(c)
+	if err != nil {
+		return
+	}
+	var users []models.User
+	if err := database.DB.Where("id IN ?", userIDs).Find(&users).Error; err != nil {
+		respondWithError(c, http.StatusInternalServerError, ErrFailedToGetUsers)
+		return
+	}
+	if len(users) == 0 {
+		respondWithError(c, http.StatusNotFound, ErrNotFound)
+		return
+	}
+	// Check permissions
+	if !HasPermissionForUser(user, users[0].ID, permissions.OWNER) {
+		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionDelete)
+		return
+	}
+	// Start a transaction to ensure atomicity of operations
+	tx := database.DB.Begin()
+	// Delete associations first
+	for _, user := range users {
+		if err := tx.Model(&user).Association("Roles").Clear(); err != nil {
+			tx.Rollback()
+			respondWithError(c, http.StatusInternalServerError, ErrFailedAssociationRoles)
+			return
+		}
+		if err := tx.Model(&user).Association("Groups").Clear(); err != nil {
+			tx.Rollback()
+			respondWithError(c, http.StatusInternalServerError, ErrFailedAssociationGroups)
+			return
+		}
+	}
+	// Delete the users
+	if err := tx.Where("id IN ?", userIDs).Delete(&models.User{}).Error; err != nil {
+		tx.Rollback()
+		respondWithError(c, http.StatusInternalServerError, ErrFailedToDeleteUsers)
+		return
+	}
+	// Commit the transaction
+	tx.Commit()
+	c.Status(http.StatusNoContent)
+}
+
 // ToggleBlockUser toggles the block status of a user
 // @Summary Toggle block user
 // @Description Toggle the block status of a user

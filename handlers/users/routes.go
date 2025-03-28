@@ -21,6 +21,7 @@ func RegisterRoutes(r *gin.RouterGroup) {
         user.GET("/", GetUsers)
         user.PUT("/:id", UpdateTargetUserProfile)
         user.DELETE("/:id", DeleteUser)
+        user.DELETE("/bulk", BulkDeleteUsers)
         user.PUT("/block/:id", ToggleBlockUser)
         user.PUT("/resetpass/:id", ResetUserPassword)
         

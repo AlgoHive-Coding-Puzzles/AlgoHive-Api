@@ -3106,6 +3106,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/bulk": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Bulk delete users by IDs",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Bulk Delete Users",
+                "parameters": [
+                    {
+                        "description": "User IDs",
+                        "name": "ids",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/user/group/{group_id}/bulk": {
             "post": {
                 "security": [
@@ -4057,9 +4108,6 @@ const docTemplate = `{
                 },
                 "competition_id": {
                     "type": "string"
-                },
-                "completion_rate": {
-                    "type": "number"
                 },
                 "highest_score": {
                     "type": "number"

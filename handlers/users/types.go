@@ -22,6 +22,9 @@ const (
 	ErrNoPermissionUsersRoles = "User does not have permission to get users from roles"
 	ErrFailedAssociationRoles = "Failed to remove user role associations"
 	ErrFailedAssociationGroups = "Failed to remove user group associations"
+	ErrInvalidUserIDs		  = "Invalid user IDs"
+	ErrEmptyUserIDs		      = "Empty user IDs"
+	ErrFailedToDeleteUsers    = "Failed to delete users"
 )
 
 // UserWithRoles represents a user with associated roles for API requests

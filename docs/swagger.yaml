@@ -1075,6 +1075,41 @@ paths:
       summary: Update a competition
       tags:
       - Competitions
+  /competitions/{id}/export:
+    get:
+      consumes:
+      - application/json
+      description: Export detailed competition data and leaderboard as an Excel file
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        "200":
+          description: Excel file download
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Export competition data as Excel
+      tags:
+      - Competitions
   /competitions/{id}/finish:
     put:
       consumes:

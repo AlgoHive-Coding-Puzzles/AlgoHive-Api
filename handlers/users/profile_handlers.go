@@ -8,6 +8,7 @@ import (
 	"api/utils"
 	"api/utils/permissions"
 	"api/utils/response"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -101,6 +102,12 @@ func UpdateUserProfile(c *gin.Context) {
     
     // Hide password
     updatedUser.Password = ""
+
+    // Invalidate the cache for the user session
+    cacheKey := UserCacheKeyPrefix + user.ID
+    if err := database.REDIS.Del(c, cacheKey).Err(); err != nil {
+        log.Printf("Failed to invalidate user session cache: %v", err)
+    }
     
     c.JSON(http.StatusOK, updatedUser)
 }

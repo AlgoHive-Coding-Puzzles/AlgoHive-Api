@@ -23,6 +23,10 @@ const (
 	ErrFailedToDeleteUsers    = "Failed to delete users"
 )
 
+const (
+	UserCacheKeyPrefix = "user_session:"
+)
+
 // UserWithRoles represents a user with associated roles for API requests
 type UserWithRoles struct {
 	FirstName string   `json:"firstname"`

@@ -1,9 +1,5 @@
 package catalogs
 
-import (
-	"github.com/gin-gonic/gin"
-)
-
 // Error message constants
 const (
 	ErrCatalogNotFound    = "API not found"
@@ -41,9 +37,4 @@ type GetPuzzleInputRequest struct {
 	ThemeName	 string  `json:"themeName"`
 	PuzzleID 	 string  `json:"puzzleId"`
 	SeedID 		 string  `json:"userId"`
-}
-
-// respondWithError sends a standardized error response
-func respondWithError(c *gin.Context, status int, message string) {
-	c.JSON(status, gin.H{"error": message})
 }

@@ -5,6 +5,7 @@ import (
 	"api/models"
 	"api/utils"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,21 +26,21 @@ func RegisterUser(c *gin.Context) {
 	var registerReq RegisterRequest
 	
 	if err := c.ShouldBindJSON(&registerReq); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	
 	// Check if the email already exists
 	var existingUser models.User
 	if err := database.DB.Where("email = ?", registerReq.Email).First(&existingUser).Error; err == nil {
-		respondWithError(c, http.StatusConflict, ErrEmailInUse)
+		response.Error(c, http.StatusConflict, ErrEmailInUse)
 		return
 	}
 	
 	// Hash the password
 	hashedPassword, err := utils.HashPassword(registerReq.Password)
 	if err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrHashPasswordFailed)
+		response.Error(c, http.StatusInternalServerError, ErrHashPasswordFailed)
 		return
 	}
 	
@@ -53,14 +54,14 @@ func RegisterUser(c *gin.Context) {
 	}
 	
 	if err := database.DB.Create(&user).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrUserCreateFailed)
+		response.Error(c, http.StatusInternalServerError, ErrUserCreateFailed)
 		return
 	}
 	
 	// Generate a JWT token
 	token, err := utils.GenerateJWT(user.ID, user.Email)
 	if err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrTokenGenerateFailed)
+		response.Error(c, http.StatusInternalServerError, ErrTokenGenerateFailed)
 		return
 	}
 	

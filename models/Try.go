@@ -1,6 +1,6 @@
 package models
 
-// Try représente une tentative d'un utilisateur pour résoudre un puzzle dans une compétition
+// Try represents a user's attempt to solve a puzzle in a competition
 type Try struct {
     ID            string      `gorm:"type:uuid;default:gen_random_uuid();primary_key" json:"id"`
     PuzzleID      string      `gorm:"type:varchar(50);not null;column:puzzle_id;uniqueIndex:unique_try" json:"puzzle_id"`

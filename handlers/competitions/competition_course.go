@@ -6,6 +6,7 @@ import (
 	"api/middleware"
 	"api/models"
 	"api/services"
+	"api/utils/response"
 	"net/http"
 	"strconv"
 
@@ -35,7 +36,7 @@ func GetInputFromCompetition(c *gin.Context) {
 	// Step 2: Parse the request body
 	var inputRequest InputRequest
 	if err := c.ShouldBindJSON(&inputRequest); err != nil {
-		respondWithError(c, http.StatusBadRequest, "Invalid request body")
+		response.Error(c, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -43,7 +44,7 @@ func GetInputFromCompetition(c *gin.Context) {
 	var competition models.Competition
 	err = services.GetAccessibleCompetition(user.ID, inputRequest.CompetitionID, &competition)
 	if err != nil {
-		respondWithError(c, http.StatusForbidden, err.Error())
+		response.Error(c, http.StatusForbidden, err.Error())
 		return
 	}
 
@@ -54,7 +55,7 @@ func GetInputFromCompetition(c *gin.Context) {
 	ctx := c.Request.Context()
 	puzzleInput, err := services.GetPuzzleInput(competition.CatalogID, competition.CatalogTheme, inputRequest.PuzzleID, user.ID, ctx)
 	if err != nil {
-		respondWithError(c, http.StatusInternalServerError, err.Error())
+		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -85,7 +86,7 @@ func AnswerPuzzle(c *gin.Context) {
 	// Step 2: Parse the request body
 	var req CompetitionTry
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrInvalidRequest)
+		response.Error(c, http.StatusBadRequest, ErrInvalidRequest)
 		return
 	}
 
@@ -93,7 +94,7 @@ func AnswerPuzzle(c *gin.Context) {
 	var competition models.Competition
 	err = services.GetAccessibleCompetition(user.ID, req.CompetitionID, &competition)
 	if err != nil {
-		respondWithError(c, http.StatusForbidden, err.Error())
+		response.Error(c, http.StatusForbidden, err.Error())
 		return
 	}
 
@@ -101,10 +102,10 @@ func AnswerPuzzle(c *gin.Context) {
 	existingTry, err := services.GetPuzzleTry(competition.ID, req.PuzzleId, req.PuzzleIndex, req.PuzzleStep, user.ID)
 	if err != nil {
 		if err.Error() == "record not found" {
-			respondWithError(c, http.StatusBadRequest, "Try not found")
+			response.Error(c, http.StatusBadRequest, "Try not found")
 			return
 		}
-		respondWithError(c, http.StatusInternalServerError, err.Error())
+		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -122,7 +123,7 @@ func AnswerPuzzle(c *gin.Context) {
 	// Step 5: Validate the try
 	isCorrect, err := services.CheckPuzzleAnswer(competition.CatalogID, competition.CatalogTheme, req.PuzzleId, req.PuzzleStep, user.ID, req.Answer)
 	if err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to check solution")
+		response.Error(c, http.StatusInternalServerError, "Failed to check solution")
 		return
 	}
 
@@ -130,13 +131,13 @@ func AnswerPuzzle(c *gin.Context) {
 	if (!isCorrect) {
 		_, err := services.UpdateTry(competition, req.PuzzleId, req.PuzzleIndex, req.PuzzleStep, user, req.Answer)
 		if err != nil {
-			respondWithError(c, http.StatusInternalServerError, "Failed to update try")
+			response.Error(c, http.StatusInternalServerError, "Failed to update try")
 			return
 		}
 	} else {
 		_, err := services.EndTry(competition, req.PuzzleId, req.PuzzleIndex, req.PuzzleStep, user, req.Answer)
 		if err != nil {
-			respondWithError(c, http.StatusInternalServerError, "Failed to end try")
+			response.Error(c, http.StatusInternalServerError, "Failed to end try")
 			return
 		}
 	}
@@ -165,7 +166,7 @@ func GetTriesFromCompetitonPuzzle(c *gin.Context) {
 	puzzleIndex := c.Param("puzzle_index")
 
 	if competitionID == "" || puzzleID == "" {
-		respondWithError(c, http.StatusBadRequest, "Invalid competition or puzzle ID")
+		response.Error(c, http.StatusBadRequest, "Invalid competition or puzzle ID")
 		return
 	}
 
@@ -179,7 +180,7 @@ func GetTriesFromCompetitonPuzzle(c *gin.Context) {
 	var competition models.Competition
 	err = services.GetAccessibleCompetition(user.ID, competitionID, &competition)
 	if err != nil {
-		respondWithError(c, http.StatusForbidden, err.Error())
+		response.Error(c, http.StatusForbidden, err.Error())
 		return
 	}
 
@@ -187,7 +188,7 @@ func GetTriesFromCompetitonPuzzle(c *gin.Context) {
 	var tries []models.Try
 	if err := database.DB.Where("competition_id = ? AND user_id = ? AND puzzle_id = ? AND puzzle_index = ?",
 		competitionID, user.ID, puzzleID, puzzleIndex).Find(&tries).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to fetch tries")
+		response.Error(c, http.StatusInternalServerError, "Failed to fetch tries")
 		return
 	}
 
@@ -213,7 +214,7 @@ func UserHasPermissionToViewPuzzle(c *gin.Context) {
 	puzzleIndex := c.Param("puzzle_index")
 
 	if competitionID == "" || puzzleIndex == "" {
-		respondWithError(c, http.StatusBadRequest, "Invalid competition or puzzle ID")
+		response.Error(c, http.StatusBadRequest, "Invalid competition or puzzle ID")
 		return
 	}
 
@@ -227,14 +228,14 @@ func UserHasPermissionToViewPuzzle(c *gin.Context) {
 	var competition models.Competition
 	err = services.GetAccessibleCompetition(user.ID, competitionID, &competition)
 	if err != nil {
-		respondWithError(c, http.StatusForbidden, err.Error())
+		response.Error(c, http.StatusForbidden, err.Error())
 		return
 	}
 
 	// Step 3: Check if the user has permission to view the puzzle
 	puzzleIndexInt, err := strconv.Atoi(puzzleIndex)
 	if err != nil {
-		respondWithError(c, http.StatusBadRequest, "Invalid puzzle index")
+		response.Error(c, http.StatusBadRequest, "Invalid puzzle index")
 		return
 	}
 	hasPermission := services.UserHasPermissionToViewPuzzle(competition, puzzleIndexInt, user.ID)

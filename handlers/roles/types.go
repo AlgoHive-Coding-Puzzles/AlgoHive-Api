@@ -1,10 +1,6 @@
 package roles
 
-import (
-	"github.com/gin-gonic/gin"
-)
-
-// Constantes pour les messages d'erreur
+// Constants for error messages
 const (
 	ErrRoleNotFound          = "Role not found"
 	ErrUserNotFound          = "User not found"
@@ -20,7 +16,7 @@ const (
 	ErrFailedTxCommit        = "Failed to commit transaction"
 )
 
-// CreateRoleRequest modèle pour créer un rôle
+// CreateRoleRequest defines the structure for creating a role
 type CreateRoleRequest struct {
 	Name       string   `json:"name" binding:"required"`
 	Permission int      `json:"permission"`
@@ -32,9 +28,4 @@ type UpdateRoleRequest struct {
 	Name       string   `json:"name"`
 	Permission int      `json:"permission"`
 	ScopesIds  []string `json:"scopes_ids"`
-}
-
-// respondWithError envoie une réponse d'erreur standardisée
-func respondWithError(c *gin.Context, status int, message string) {
-	c.JSON(status, gin.H{"error": message})
 }

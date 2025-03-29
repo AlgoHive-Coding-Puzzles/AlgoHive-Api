@@ -5,6 +5,7 @@ import (
 	"api/middleware"
 	"api/models"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,13 +28,13 @@ func GetAllGroups(c *gin.Context) {
 	}
 
 	if !permissions.RolesHavePermission(user.Roles, permissions.GROUPS) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
 		return
 	}
 
 	var groups []models.Group
 	if err := database.DB.Find(&groups).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFetchingGroups)
+		response.Error(c, http.StatusInternalServerError, ErrFetchingGroups)
 		return
 	}
 	
@@ -60,12 +61,12 @@ func GetGroup(c *gin.Context) {
 	groupID := c.Param("group_id")
 	var group models.Group
 	if err := database.DB.Where("id = ?", groupID).Preload("Users").Preload("Competitions").First(&group).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrGroupNotFound)
+		response.Error(c, http.StatusBadRequest, ErrGroupNotFound)
 		return
 	}
 
 	if !userCanManageGroup(user.ID, &group) && !permissions.RolesHavePermission(user.Roles, permissions.OWNER) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionViewGroup)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionViewGroup)
 		return
 	}
 
@@ -92,25 +93,25 @@ func CreateGroup(c *gin.Context) {
 
 	// Verify that the user is staff
 	if !permissions.IsStaff(user) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionCreate)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionCreate)
 		return
 	}
 
 	var req CreateGroupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// Verify that the scope exists
 	var scopes []models.Scope
 	if err := database.DB.Where("id = ?", req.ScopeId).Find(&scopes).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrInvalidScopeIDs)
+		response.Error(c, http.StatusBadRequest, ErrInvalidScopeIDs)
 		return
 	}
 	
 	if len(scopes) == 0 {
-		respondWithError(c, http.StatusBadRequest, ErrInvalidScopeIDs)
+		response.Error(c, http.StatusBadRequest, ErrInvalidScopeIDs)
 		return
 	}
 
@@ -122,7 +123,7 @@ func CreateGroup(c *gin.Context) {
 	}
 	
 	if err := database.DB.Create(&group).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to create group")
+		response.Error(c, http.StatusInternalServerError, "Failed to create group")
 		return
 	}
 	
@@ -150,12 +151,12 @@ func DeleteGroup(c *gin.Context) {
 	groupID := c.Param("group_id")
 	var group models.Group
 	if err := database.DB.Where("id = ?", groupID).Preload("Users").Preload("Competitions").First(&group).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrGroupNotFound)
+		response.Error(c, http.StatusBadRequest, ErrGroupNotFound)
 		return
 	}
 
 	if !userCanManageGroup(user.ID, &group) && !permissions.RolesHavePermission(user.Roles, permissions.OWNER) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionDelete)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionDelete)
 		return
 	}
 
@@ -165,19 +166,19 @@ func DeleteGroup(c *gin.Context) {
 	// First remove the associations
 	if err := tx.Model(&group).Association("Users").Clear(); err != nil {
 		tx.Rollback()
-		respondWithError(c, http.StatusInternalServerError, "Failed to clear group associations")
+		response.Error(c, http.StatusInternalServerError, "Failed to clear group associations")
 		return
 	}
 	
 	if err := tx.Model(&group).Association("Competitions").Clear(); err != nil {
 		tx.Rollback()
-		respondWithError(c, http.StatusInternalServerError, "Failed to clear group competitions")
+		response.Error(c, http.StatusInternalServerError, "Failed to clear group competitions")
 		return
 	}
 	
 	if err := tx.Delete(&group).Error; err != nil {
 		tx.Rollback()
-		respondWithError(c, http.StatusInternalServerError, "Failed to delete group")
+		response.Error(c, http.StatusInternalServerError, "Failed to delete group")
 		return
 	}
 	
@@ -207,18 +208,18 @@ func UpdateGroup(c *gin.Context) {
 	groupID := c.Param("group_id")
 	var group models.Group
 	if err := database.DB.Where("id = ?", groupID).First(&group).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrGroupNotFound)
+		response.Error(c, http.StatusBadRequest, ErrGroupNotFound)
 		return
 	}
 
 	if !userCanManageGroup(user.ID, &group) && !permissions.RolesHavePermission(user.Roles, permissions.OWNER) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionUpdate)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionUpdate)
 		return
 	}
 
 	var req UpdateGroupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -232,7 +233,7 @@ func UpdateGroup(c *gin.Context) {
 	}
 
 	if err := database.DB.Model(&group).Updates(updates).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to update group")
+		response.Error(c, http.StatusInternalServerError, "Failed to update group")
 		return
 	}
 	
@@ -258,13 +259,13 @@ func GetGroupsFromScope(c *gin.Context) {
 	scopeID := c.Param("scope_id")
 	var scope models.Scope
 	if err := database.DB.Where("id = ?", scopeID).First(&scope).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrScopeNotFound)
+		response.Error(c, http.StatusBadRequest, ErrScopeNotFound)
 		return
 	}
 
 	var groups []models.Group
 	if err := database.DB.Where("scope_id = ?", scopeID).Preload("Users").Find(&groups).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrFetchingGroups)
+		response.Error(c, http.StatusBadRequest, ErrFetchingGroups)
 		return
 	}
 
@@ -295,7 +296,7 @@ func GetMyGroups(c *gin.Context) {
 		JOIN public.role_scopes rs ON rs.scope_id = s.id
 		JOIN public.user_roles ur ON ur.role_id = rs.role_id
 		WHERE ur.user_id = ?`, user.ID).Scan(&groups).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrFetchingGroups)
+		response.Error(c, http.StatusBadRequest, ErrFetchingGroups)
 		return
 	}
 	c.JSON(http.StatusOK, groups)

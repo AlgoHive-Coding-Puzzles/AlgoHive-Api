@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// User represents a user in the system with authentication details
 type User struct {
     ID                 string     `gorm:"type:uuid;default:gen_random_uuid();primary_key" json:"id"`
     Firstname          string     `gorm:"type:varchar(50);not null" json:"firstname"`

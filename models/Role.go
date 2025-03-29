@@ -1,5 +1,6 @@
 package models
 
+// Role represents a user role in the system with specific permissions
 type Role struct {
     ID          string    `gorm:"type:uuid;default:gen_random_uuid();primary_key" json:"id"`
     Name        string    `gorm:"type:varchar(50);unique;not null" json:"name"`

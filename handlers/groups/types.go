@@ -1,10 +1,6 @@
 package groups
 
-import (
-	"github.com/gin-gonic/gin"
-)
-
-// Constantes pour les messages d'erreur
+// Constants for error messages
 const (
 	ErrGroupNotFound          = "Group not found"
 	ErrUserNotFound           = "User not found"
@@ -20,20 +16,15 @@ const (
 	ErrFetchingGroups         = "Error while fetching groups"
 )
 
-// CreateGroupRequest modèle pour créer un groupe
+// CreateGroupRequest model for creating a group
 type CreateGroupRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description"`
 	ScopeId     string `json:"scope_id" binding:"required"`
 }
 
-// UpdateGroupRequest modèle pour mettre à jour un groupe
+// UpdateGroupRequest model for updating a group
 type UpdateGroupRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-}
-
-// respondWithError envoie une réponse d'erreur standardisée
-func respondWithError(c *gin.Context, status int, message string) {
-    c.JSON(status, gin.H{"error": message})
 }

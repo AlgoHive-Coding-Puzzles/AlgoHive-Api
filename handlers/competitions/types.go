@@ -1,10 +1,6 @@
 package competitions
 
-import (
-	"github.com/gin-gonic/gin"
-)
-
-// Constantes pour les messages d'erreur
+// Constants for error messages
 const (
 	ErrCompetitionNotFound      = "Competition not found"
 	ErrGroupNotFound            = "Group not found"
@@ -30,7 +26,7 @@ const (
 	ErrUnauthorizedAccess	  = "Unauthorized access to competition"
 )
 
-// CreateCompetitionRequest modèle pour créer une compétition
+// CreateCompetitionRequest model for creating a competition
 type CreateCompetitionRequest struct {
 	Title           string   `json:"title" binding:"required"`
 	Description     string   `json:"description" binding:"required"`
@@ -40,7 +36,7 @@ type CreateCompetitionRequest struct {
 	Show            bool     `json:"show"`
 }
 
-// UpdateCompetitionRequest modèle pour mettre à jour une compétition
+// UpdateCompetitionRequest model for updating a competition
 type UpdateCompetitionRequest struct {
 	Title           string   `json:"title"`
 	Description     string   `json:"description"`
@@ -50,7 +46,7 @@ type UpdateCompetitionRequest struct {
 	Show            *bool    `json:"show"`
 }
 
-// CompetitionStatsResponse modèle pour les statistiques d'une compétition
+// CompetitionStatsResponse model for competition statistics
 type CompetitionStatsResponse struct {
 	CompetitionID   string `json:"competition_id"`
 	Title           string `json:"title"`
@@ -60,6 +56,7 @@ type CompetitionStatsResponse struct {
 	HighestScore    float64 `json:"highest_score"`
 }
 
+// InputRequest model for input request
 type InputRequest struct {
 	CompetitionID   string  `json:"competition_id"`
 	PuzzleID 	    string  `json:"puzzle_id"`
@@ -67,6 +64,7 @@ type InputRequest struct {
 	PuzzleDifficulty string     `json:"puzzle_difficulty"`
 }
 
+// CompetitionTry model for competition try
 type CompetitionTry struct {
 	CompetitionID   string  `json:"competition_id"`
 	PuzzleId 	    string  `json:"puzzle_id"`
@@ -75,9 +73,4 @@ type CompetitionTry struct {
 	PuzzleDifficulty string     `json:"puzzle_difficulty"`
 	UserID 		    string  `json:"user_id"`
 	Answer        string  `json:"solution"`
-}
-
-// respondWithError envoie une réponse d'erreur standardisée
-func respondWithError(c *gin.Context, status int, message string) {
-	c.JSON(status, gin.H{"error": message})
 }

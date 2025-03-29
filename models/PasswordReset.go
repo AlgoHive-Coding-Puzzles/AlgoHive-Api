@@ -2,6 +2,7 @@ package models
 
 import "time"
 
+// PasswordReset represents a password reset request for a user
 type PasswordReset struct {
     ID        string    `gorm:"type:uuid;default:gen_random_uuid();primary_key" json:"id"`
     UserID    string    `gorm:"type:uuid;not null" json:"user_id"`

@@ -4,12 +4,13 @@ import (
 	"api/database"
 	"api/middleware"
 	"api/models"
+	"api/utils/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// AddUserToGroup ajoute un utilisateur à un groupe
+// AddUserToGroup add a user to a group
 // @Summary Add a user to a group
 // @Description Add a user to a group
 // @Tags Groups
@@ -30,38 +31,38 @@ func AddUserToGroup(c *gin.Context) {
 
 	groupID := c.Param("group_id")
 	if !UserOwnsTargetGroups(user.ID, groupID) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionAddUser)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionAddUser)
 		return
 	}
 
 	var group models.Group
 	if err := database.DB.Where("id = ?", groupID).Preload("Users").First(&group).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrGroupNotFound)
+		response.Error(c, http.StatusBadRequest, ErrGroupNotFound)
 		return
 	}
 
 	if !userCanManageGroup(user.ID, &group) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionAddUser)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionAddUser)
 		return
 	}
 
 	targetUserID := c.Param("user_id")
 	var targetUser models.User
 	if err := database.DB.Where("id = ?", targetUserID).First(&targetUser).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrUserNotFound)
+		response.Error(c, http.StatusBadRequest, ErrUserNotFound)
 		return
 	}
 
 	// Ajouter l'utilisateur au groupe
 	if err := database.DB.Model(&group).Association("Users").Append(&targetUser); err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to add user to group")
+		response.Error(c, http.StatusInternalServerError, "Failed to add user to group")
 		return
 	}
 	
 	c.Status(http.StatusNoContent)
 }
 
-// RemoveUserFromGroup retire un utilisateur d'un groupe
+// RemoveUserFromGroup removes a user from a group
 // @Summary Remove a user from a group
 // @Description Remove a user from a group
 // @Tags Groups
@@ -82,31 +83,30 @@ func RemoveUserFromGroup(c *gin.Context) {
 
 	groupID := c.Param("group_id")
 	if !UserOwnsTargetGroups(user.ID, groupID) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionRemoveUser)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionRemoveUser)
 		return
 	}
 
 	var group models.Group
 	if err := database.DB.Where("id = ?", groupID).Preload("Users").First(&group).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrGroupNotFound)
+		response.Error(c, http.StatusBadRequest, ErrGroupNotFound)
 		return
 	}
 
 	if !userCanManageGroup(user.ID, &group) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionRemoveUser)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionRemoveUser)
 		return
 	}
 
 	targetUserID := c.Param("user_id")
 	var targetUser models.User
 	if err := database.DB.Where("id = ?", targetUserID).First(&targetUser).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrUserNotFound)
+		response.Error(c, http.StatusBadRequest, ErrUserNotFound)
 		return
 	}
 
-	// Retirer l'utilisateur du groupe
 	if err := database.DB.Model(&group).Association("Users").Delete(&targetUser); err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to remove user from group")
+		response.Error(c, http.StatusInternalServerError, "Failed to remove user from group")
 		return
 	}
 	

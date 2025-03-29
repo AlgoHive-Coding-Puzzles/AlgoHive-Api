@@ -5,6 +5,7 @@ import (
 	"api/middleware"
 	"api/models"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,7 +32,7 @@ func AddGroupToCompetition(c *gin.Context) {
 	}
 
 	if !hasCompetitionPermission(user, permissions.COMPETITIONS) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionManageGroups)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionManageGroups)
 		return
 	}
 
@@ -40,20 +41,20 @@ func AddGroupToCompetition(c *gin.Context) {
 
 	var competition models.Competition
 	if err := database.DB.First(&competition, "id = ?", competitionID).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
+		response.Error(c, http.StatusNotFound, ErrCompetitionNotFound)
 		return
 	}
 
 	var group models.Group
 	if err := database.DB.First(&group, "id = ?", groupID).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrGroupNotFound)
+		response.Error(c, http.StatusNotFound, ErrGroupNotFound)
 		return
 	}
 
 	// Add the group to the competition
 	if err := database.DB.Exec("INSERT INTO competition_groups (group_id, competition_id) VALUES (?, ?) ON CONFLICT DO NOTHING", 
 		groupID, competitionID).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedAddGroup)
+		response.Error(c, http.StatusInternalServerError, ErrFailedAddGroup)
 		return
 	}
 
@@ -81,7 +82,7 @@ func RemoveGroupFromCompetition(c *gin.Context) {
 	}
 
 	if !hasCompetitionPermission(user, permissions.COMPETITIONS) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionManageGroups)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionManageGroups)
 		return
 	}
 
@@ -90,20 +91,20 @@ func RemoveGroupFromCompetition(c *gin.Context) {
 
 	var competition models.Competition
 	if err := database.DB.First(&competition, "id = ?", competitionID).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
+		response.Error(c, http.StatusNotFound, ErrCompetitionNotFound)
 		return
 	}
 
 	var group models.Group
 	if err := database.DB.First(&group, "id = ?", groupID).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrGroupNotFound)
+		response.Error(c, http.StatusNotFound, ErrGroupNotFound)
 		return
 	}
 
 	// Remove the group from the competition
 	if err := database.DB.Exec("DELETE FROM competition_groups WHERE group_id = ? AND competition_id = ?", 
 		groupID, competitionID).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedRemoveGroup)
+		response.Error(c, http.StatusInternalServerError, ErrFailedRemoveGroup)
 		return
 	}
 
@@ -132,14 +133,14 @@ func GetCompetitionGroups(c *gin.Context) {
 	}
 
 	if !hasCompetitionPermission(user, permissions.COMPETITIONS) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionManageGroups)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionManageGroups)
 		return
 	}
 
 	competitionID := c.Param("id")
 	var competition models.Competition
 	if err := database.DB.First(&competition, "id = ?", competitionID).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
+		response.Error(c, http.StatusNotFound, ErrCompetitionNotFound)
 		return
 	}
 
@@ -147,7 +148,7 @@ func GetCompetitionGroups(c *gin.Context) {
 	if err := database.DB.Joins("JOIN competition_groups cat ON cat.group_id = groups.id").
 		Where("cat.competition_id = ?", competitionID).
 		Find(&groups).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to fetch groups")
+		response.Error(c, http.StatusInternalServerError, "Failed to fetch groups")
 		return
 	}
 

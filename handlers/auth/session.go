@@ -5,6 +5,7 @@ import (
 	"api/models"
 	"api/utils"
 	"api/utils/permissions"
+	"api/utils/response"
 	"context"
 	"net/http"
 	"time"
@@ -43,14 +44,14 @@ func Logout(c *gin.Context) {
 	// Retrieve the token
 	token, err := getTokenFromRequest(c)
 	if err != nil {
-		respondWithError(c, http.StatusUnauthorized, ErrNoTokenProvided)
+		response.Error(c, http.StatusUnauthorized, ErrNoTokenProvided)
 		return
 	}
 
 	// Validate the token to obtain the expiration time
 	claims, err := utils.ValidateToken(token)
 	if err != nil {
-		respondWithError(c, http.StatusUnauthorized, ErrInvalidToken)
+		response.Error(c, http.StatusUnauthorized, ErrInvalidToken)
 		return
 	}
 
@@ -64,7 +65,7 @@ func Logout(c *gin.Context) {
 	err = database.REDIS.Set(ctx, redisKey, "1", remainingTime).Err()
 	if err != nil {
 		
-		respondWithError(c, http.StatusInternalServerError, ErrLogoutFailed)
+		response.Error(c, http.StatusInternalServerError, ErrLogoutFailed)
 		return
 	}
 

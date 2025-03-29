@@ -5,6 +5,7 @@ import (
 	"api/middleware"
 	"api/models"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -29,13 +30,13 @@ func CreateRole(c *gin.Context) {
 
 	// Check permissions
 	if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionCreate)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionCreate)
 		return
 	}
 
 	var createRoleRequest CreateRoleRequest
 	if err := c.ShouldBindJSON(&createRoleRequest); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -44,7 +45,7 @@ func CreateRole(c *gin.Context) {
 	if len(createRoleRequest.ScopesIds) > 0 {
 		var scopes []models.Scope
 		if err := database.DB.Where("id IN (?)", createRoleRequest.ScopesIds).Find(&scopes).Error; err != nil {
-			respondWithError(c, http.StatusBadRequest, "Invalid scope IDs")
+			response.Error(c, http.StatusBadRequest, "Invalid scope IDs")
 			return
 		}
 		
@@ -61,7 +62,7 @@ func CreateRole(c *gin.Context) {
 	}
 
 	if err := database.DB.Create(&role).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to create role")
+		response.Error(c, http.StatusInternalServerError, "Failed to create role")
 		return
 	}
 
@@ -85,13 +86,13 @@ func GetAllRoles(c *gin.Context) {
 
 	// Check permissions
 	if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
 		return
 	}
 
 	var roles []models.Role
 	if err := database.DB.Preload("Users").Preload("Scopes").Find(&roles).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to fetch roles")
+		response.Error(c, http.StatusInternalServerError, "Failed to fetch roles")
 		return
 	}
 	
@@ -114,7 +115,7 @@ func GetRoleByID(c *gin.Context) {
 
 	var role models.Role
 	if err := database.DB.Where("id = ?", roleID).Preload("Users").Preload("Scopes").First(&role).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrRoleNotFound)
+		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
 		return
 	}
 
@@ -142,7 +143,7 @@ func UpdateRoleByID(c *gin.Context) {
 
 	// Check permissions
 	if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionUpdate)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionUpdate)
 		return
 	}
 
@@ -150,14 +151,14 @@ func UpdateRoleByID(c *gin.Context) {
 
 	var role models.Role
 	if err := database.DB.Where("id = ?", roleID).Preload("Scopes").First(&role).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrRoleNotFound)
+		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
 		return
 	}
 
 	// Parse the update request
 	var updateRequest UpdateRoleRequest
 	if err := c.ShouldBindJSON(&updateRequest); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -169,7 +170,7 @@ func UpdateRoleByID(c *gin.Context) {
 	if updateRequest.ScopesIds != nil {
 		// Clear existing associations
 		if err := database.DB.Model(&role).Association("Scopes").Clear(); err != nil {
-			respondWithError(c, http.StatusInternalServerError, "Failed to clear existing scope associations")
+			response.Error(c, http.StatusInternalServerError, "Failed to clear existing scope associations")
 			return
 		}
 
@@ -177,7 +178,7 @@ func UpdateRoleByID(c *gin.Context) {
 		if len(updateRequest.ScopesIds) > 0 {
 			var scopes []models.Scope
 			if err := database.DB.Where("id IN (?)", updateRequest.ScopesIds).Find(&scopes).Error; err != nil {
-				respondWithError(c, http.StatusBadRequest, "Invalid scope IDs")
+				response.Error(c, http.StatusBadRequest, "Invalid scope IDs")
 				return
 			}
 
@@ -193,13 +194,13 @@ func UpdateRoleByID(c *gin.Context) {
 
 	// Save the updated role with its scope relationships
 	if err := database.DB.Save(&role).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to update role")
+		response.Error(c, http.StatusInternalServerError, "Failed to update role")
 		return
 	}
 
 	// Fetch the updated role with all its associations for the response
 	if err := database.DB.Preload("Users").Preload("Scopes").Where("id = ?", roleID).First(&role).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to fetch updated role")
+		response.Error(c, http.StatusInternalServerError, "Failed to fetch updated role")
 		return
 	}
 
@@ -225,7 +226,7 @@ func DeleteRole(c *gin.Context) {
 
 	// Check permissions
     if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
-        respondWithError(c, http.StatusUnauthorized, ErrNoPermissionDelete)
+        response.Error(c, http.StatusUnauthorized, ErrNoPermissionDelete)
         return
     }
 
@@ -233,7 +234,7 @@ func DeleteRole(c *gin.Context) {
 
     var role models.Role
     if err := database.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
-        respondWithError(c, http.StatusNotFound, ErrRoleNotFound)
+        response.Error(c, http.StatusNotFound, ErrRoleNotFound)
         return
     }
 
@@ -243,27 +244,27 @@ func DeleteRole(c *gin.Context) {
     // Remove the role from all users who have it (user_roles)
     if err := tx.Exec("DELETE FROM user_roles WHERE role_id = ?", roleID).Error; err != nil {
         tx.Rollback()
-        respondWithError(c, http.StatusInternalServerError, ErrFailedRoleUserRemove)
+        response.Error(c, http.StatusInternalServerError, ErrFailedRoleUserRemove)
         return
     }
 
     // Remove all associations with scopes (role_scopes)
     if err := tx.Exec("DELETE FROM role_scopes WHERE role_id = ?", roleID).Error; err != nil {
         tx.Rollback()
-        respondWithError(c, http.StatusInternalServerError, ErrFailedRoleScopeRemove)
+        response.Error(c, http.StatusInternalServerError, ErrFailedRoleScopeRemove)
         return
     }
 
     // Finally, delete the role itself
     if err := tx.Delete(&role).Error; err != nil {
         tx.Rollback()
-        respondWithError(c, http.StatusInternalServerError, ErrFailedRoleDelete)
+        response.Error(c, http.StatusInternalServerError, ErrFailedRoleDelete)
         return
     }
 
     // Commit the transaction
     if err := tx.Commit().Error; err != nil {
-        respondWithError(c, http.StatusInternalServerError, ErrFailedTxCommit)
+        response.Error(c, http.StatusInternalServerError, ErrFailedTxCommit)
         return
     }
 

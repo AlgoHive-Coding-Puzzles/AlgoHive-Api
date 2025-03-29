@@ -5,6 +5,7 @@ import (
 	"api/middleware"
 	"api/models"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -30,7 +31,7 @@ func AttachRoleToUser(c *gin.Context) {
 
 	// Check permissions
     if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
-        respondWithError(c, http.StatusUnauthorized, ErrNoPermissionAttach)
+        response.Error(c, http.StatusUnauthorized, ErrNoPermissionAttach)
         return
     }
 
@@ -39,7 +40,7 @@ func AttachRoleToUser(c *gin.Context) {
 	var targetUser models.User
 	
 	if err := database.DB.Where("id = ?", targetUserId).Preload("Roles").First(&targetUser).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrUserNotFound)
+		response.Error(c, http.StatusNotFound, ErrUserNotFound)
 		return
 	}
 
@@ -48,14 +49,14 @@ func AttachRoleToUser(c *gin.Context) {
 	
 	var role models.Role
 	if err := database.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrRoleNotFound)
+		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
 		return
 	}
 	
 	// Attach role to user
 	targetUser.Roles = append(targetUser.Roles, &role)
 	if err := database.DB.Save(&targetUser).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to attach role to user")
+		response.Error(c, http.StatusInternalServerError, "Failed to attach role to user")
 		return
 	}
 	
@@ -82,7 +83,7 @@ func DetachRoleFromUser(c *gin.Context) {
 
 	// Check permissions
 	if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionDetach)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionDetach)
 		return
 	}
 
@@ -91,7 +92,7 @@ func DetachRoleFromUser(c *gin.Context) {
 	var targetUser models.User
 	
 	if err := database.DB.Where("id = ?", targetUserId).Preload("Roles").First(&targetUser).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrUserNotFound)
+		response.Error(c, http.StatusNotFound, ErrUserNotFound)
 		return
 	}
 	
@@ -100,7 +101,7 @@ func DetachRoleFromUser(c *gin.Context) {
 
 	var role models.Role
 	if err := database.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrRoleNotFound)
+		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
 		return
 	}
 	
@@ -113,7 +114,7 @@ func DetachRoleFromUser(c *gin.Context) {
 	}
 	
 	if err := database.DB.Save(&targetUser).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to detach role from user")
+		response.Error(c, http.StatusInternalServerError, "Failed to detach role from user")
 		return
 	}
 	

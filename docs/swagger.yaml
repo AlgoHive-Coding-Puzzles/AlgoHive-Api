@@ -1888,7 +1888,7 @@ paths:
       - Groups
   /ping:
     get:
-      description: Répond avec "pong"
+      description: This endpoint is used to check if the server is running
       produces:
       - application/json
       responses:
@@ -1898,7 +1898,7 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Répond avec "pong"
+      summary: Answer with "pong"
       tags:
       - App
   /roles:

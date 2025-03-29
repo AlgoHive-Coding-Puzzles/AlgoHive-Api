@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Summary Répond avec "pong"
-// @Description Répond avec "pong"
+// @Summary Answer with "pong"
+// @Description This endpoint is used to check if the server is running
 // @Tags App
 // @Produce json
 // @Success 200 {object} map[string]string

@@ -1,5 +1,6 @@
 package models
 
+// Group represents a group of users that can participate in competitions
 type Group struct {
     ID           string        `gorm:"type:uuid;default:gen_random_uuid();primary_key" json:"id"`
     Name         string        `gorm:"type:varchar(50);not null" json:"name"`

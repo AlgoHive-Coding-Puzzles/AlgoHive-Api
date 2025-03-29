@@ -5,6 +5,7 @@ import (
 	"api/models"
 	"api/utils"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 	"time"
 
@@ -26,32 +27,32 @@ func Login(c *gin.Context) {
 	var loginReq LoginRequest
 	
 	if err := c.ShouldBindJSON(&loginReq); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	
 	var user models.User
 	if err := database.DB.Where("email = ?", loginReq.Email).Preload("Roles").Preload("Groups").First(&user).Error; err != nil {
-		respondWithError(c, http.StatusUnauthorized, ErrInvalidCredentials)
+		response.Error(c, http.StatusUnauthorized, ErrInvalidCredentials)
 		return
 	}
 	
 	// Check if the user is blocked
 	if user.Blocked {
-		respondWithError(c, http.StatusUnauthorized, ErrAccountBlocked)
+		response.Error(c, http.StatusUnauthorized, ErrAccountBlocked)
 		return
 	}
 	
 	// Verify the password
 	if !utils.CheckPasswordHash(loginReq.Password, user.Password) {
-		respondWithError(c, http.StatusUnauthorized, ErrInvalidCredentials)
+		response.Error(c, http.StatusUnauthorized, ErrInvalidCredentials)
 		return
 	}
 	
 	// Generate a JWT token
 	token, err := utils.GenerateJWT(user.ID, user.Email)
 	if err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrTokenGenerateFailed)
+		response.Error(c, http.StatusInternalServerError, ErrTokenGenerateFailed)
 		return
 	}
 	
@@ -62,7 +63,7 @@ func Login(c *gin.Context) {
 	now := time.Now()
 	user.LastConnected = &now
 	if err := database.DB.Save(&user).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrTokenGenerateFailed)
+		response.Error(c, http.StatusInternalServerError, ErrTokenGenerateFailed)
 		return
 	}
 

@@ -1,5 +1,6 @@
 package models
 
+// Scope represents a scope of access in the system, which can be associated with roles and catalogs
 type Scope struct {
     ID              string            `gorm:"type:uuid;default:gen_random_uuid();primary_key" json:"id"`
     Name            string            `gorm:"type:varchar(50);unique;not null" json:"name"`

@@ -3,6 +3,7 @@ package catalogs
 import (
 	"api/database"
 	"api/services"
+	"api/utils/response"
 	"net/http"
 	"strconv"
 
@@ -41,20 +42,20 @@ func GetPuzzleFromThemeCatalog(c *gin.Context) {
     // Cache miss - fetch from database and API
     address, err := services.GetAddressFromCatalogId(catalogID)
     if err != nil {
-        respondWithError(c, http.StatusNotFound, ErrCatalogNotFound)
+        response.Error(c, http.StatusNotFound, ErrCatalogNotFound)
         return
     }
 
     apiURL := address + "/theme?name=" + themeID
     var themeDetails ThemeResponse
     if err := services.CatalogProxyGet(apiURL, &themeDetails); err != nil {
-        respondWithError(c, http.StatusInternalServerError, err.Error())
+        response.Error(c, http.StatusInternalServerError, err.Error())
         return
     }
 
     puzzleIndexInt, err := strconv.Atoi(puzzleIndex)
     if err != nil || puzzleIndexInt < 0 || puzzleIndexInt >= len(themeDetails.Puzzles) {
-        respondWithError(c, http.StatusBadRequest, "Invalid puzzle Index")
+        response.Error(c, http.StatusBadRequest, "Invalid puzzle Index")
         return
     }
     puzzleDetails = themeDetails.Puzzles[puzzleIndexInt]
@@ -80,14 +81,14 @@ func GetPuzzleFromThemeCatalog(c *gin.Context) {
 func GetPuzzleInputFromThemeCatalog(c *gin.Context) {
     var req GetPuzzleInputRequest
     if err := c.ShouldBindJSON(&req); err != nil {
-        respondWithError(c, http.StatusBadRequest, "Invalid request body")
+        response.Error(c, http.StatusBadRequest, "Invalid request body")
         return
     }
 
     ctx := c.Request.Context()
     puzzleInput, err := services.GetPuzzleInput(req.CatalogID, req.ThemeName, req.PuzzleID, req.SeedID, ctx)
     if err != nil {
-        respondWithError(c, http.StatusInternalServerError, err.Error())
+        response.Error(c, http.StatusInternalServerError, err.Error())
         return
     }
     

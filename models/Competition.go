@@ -1,5 +1,7 @@
 package models
 
+// Competition represents a algorithmic competition
+// It contains information about the competition, including its title, description, and status
 type Competition struct {
 	ID              string    `gorm:"type:uuid;default:gen_random_uuid();primary_key" json:"id"`
 	Title           string    `gorm:"type:varchar(100);not null;unique" json:"title"`

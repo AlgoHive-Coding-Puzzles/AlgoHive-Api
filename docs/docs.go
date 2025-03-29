@@ -2190,14 +2190,14 @@ const docTemplate = `{
         },
         "/ping": {
             "get": {
-                "description": "Répond avec \"pong\"",
+                "description": "This endpoint is used to check if the server is running",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "App"
                 ],
-                "summary": "Répond avec \"pong\"",
+                "summary": "Answer with \"pong\"",
                 "responses": {
                     "200": {
                         "description": "OK",

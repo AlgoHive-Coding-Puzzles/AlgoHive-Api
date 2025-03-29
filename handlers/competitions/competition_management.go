@@ -5,6 +5,7 @@ import (
 	"api/middleware"
 	"api/models"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -32,13 +33,13 @@ func GetAllCompetitions(c *gin.Context) {
 	}
 
 	if !hasCompetitionPermission(user, permissions.COMPETITIONS) && !permissions.IsOwner(user) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
 		return
 	}
 
 	var competitions []models.Competition
 	if err := database.DB.Preload("Catalog").Preload("Groups").Find(&competitions).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedFetchCompetitions)
+		response.Error(c, http.StatusInternalServerError, ErrFailedFetchCompetitions)
 		return
 	}
 
@@ -85,7 +86,7 @@ func GetUserCompetitions(c *gin.Context) {
 		JOIN user_groups ug ON cat.group_id = ug.group_id
 		WHERE ug.user_id = ? AND c.show = true
 	`, user.ID).Scan(&competitions).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedFetchCompetitions)
+		response.Error(c, http.StatusInternalServerError, ErrFailedFetchCompetitions)
 		return
 	}
 
@@ -125,7 +126,7 @@ func GetCompetition(c *gin.Context) {
 	var competition models.Competition
 
 	if err := database.DB.Preload("Catalog").Preload("Groups").Where("id = ?", competitionID).First(&competition).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
+		response.Error(c, http.StatusNotFound, ErrCompetitionNotFound)
 		return
 	}
 
@@ -135,7 +136,7 @@ func GetCompetition(c *gin.Context) {
 				userHasAccessToCompetition(user.ID, competitionID)
 
 	if !hasAccess {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
 		return
 	}
 
@@ -161,20 +162,20 @@ func CreateCompetition(c *gin.Context) {
 	}
 
 	if !hasCompetitionPermission(user, permissions.COMPETITIONS) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionCreate)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionCreate)
 		return
 	}
 
 	var req CreateCompetitionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrInvalidRequest)
+		response.Error(c, http.StatusBadRequest, ErrInvalidRequest)
 		return
 	}
 
 	// Check that the API environment exists
 	var apiEnv models.Catalog
 	if err := database.DB.First(&apiEnv, "id = ?", req.CatalogID).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrCatalogNotFound)
+		response.Error(c, http.StatusBadRequest, ErrCatalogNotFound)
 		return
 	}
 
@@ -193,7 +194,7 @@ func CreateCompetition(c *gin.Context) {
 
 	if err := tx.Create(&competition).Error; err != nil {
 		tx.Rollback()
-		respondWithError(c, http.StatusInternalServerError, ErrFailedCreateCompetition)
+		response.Error(c, http.StatusInternalServerError, ErrFailedCreateCompetition)
 		return
 	}
 
@@ -202,13 +203,13 @@ func CreateCompetition(c *gin.Context) {
 		var groups []models.Group
 		if err := database.DB.Where("id IN ?", req.GroupIds).Find(&groups).Error; err != nil {
 			tx.Rollback()
-			respondWithError(c, http.StatusBadRequest, ErrGroupNotFound)
+			response.Error(c, http.StatusBadRequest, ErrGroupNotFound)
 			return
 		}
 
 		if err := tx.Model(&competition).Association("Groups").Append(groups); err != nil {
 			tx.Rollback()
-			respondWithError(c, http.StatusInternalServerError, ErrFailedAddGroup)
+			response.Error(c, http.StatusInternalServerError, ErrFailedAddGroup)
 			return
 		}
 	}
@@ -242,20 +243,20 @@ func UpdateCompetition(c *gin.Context) {
 	}
 
 	if !hasCompetitionPermission(user, permissions.COMPETITIONS) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionUpdate)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionUpdate)
 		return
 	}
 
 	competitionID := c.Param("id")
 	var competition models.Competition
 	if err := database.DB.Where("id = ?", competitionID).First(&competition).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
+		response.Error(c, http.StatusNotFound, ErrCompetitionNotFound)
 		return
 	}
 
 	var req UpdateCompetitionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrInvalidRequest)
+		response.Error(c, http.StatusBadRequest, ErrInvalidRequest)
 		return
 	}
 
@@ -275,7 +276,7 @@ func UpdateCompetition(c *gin.Context) {
 		// Check that the API environment exists
 		var apiEnv models.Catalog
 		if err := database.DB.First(&apiEnv, "id = ?", req.CatalogID).Error; err != nil {
-			respondWithError(c, http.StatusBadRequest, ErrCatalogNotFound)
+			response.Error(c, http.StatusBadRequest, ErrCatalogNotFound)
 			return
 		}
 		updateData["catalog_id"] = req.CatalogID
@@ -288,7 +289,7 @@ func UpdateCompetition(c *gin.Context) {
 	}
 
 	if err := database.DB.Model(&competition).Updates(updateData).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedUpdateCompetition)
+		response.Error(c, http.StatusInternalServerError, ErrFailedUpdateCompetition)
 		return
 	}
 
@@ -317,14 +318,14 @@ func DeleteCompetition(c *gin.Context) {
 	}
 
 	if !hasCompetitionPermission(user, permissions.COMPETITIONS) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionDelete)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionDelete)
 		return
 	}
 
 	competitionID := c.Param("id")
 	var competition models.Competition
 	if err := database.DB.Where("id = ?", competitionID).First(&competition).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
+		response.Error(c, http.StatusNotFound, ErrCompetitionNotFound)
 		return
 	}
 
@@ -334,21 +335,21 @@ func DeleteCompetition(c *gin.Context) {
 	// First, delete tries related to this competition
 	if err := tx.Where("competition_id = ?", competitionID).Delete(&models.Try{}).Error; err != nil {
 		tx.Rollback()
-		respondWithError(c, http.StatusInternalServerError, ErrFailedDeleteCompetition)
+		response.Error(c, http.StatusInternalServerError, ErrFailedDeleteCompetition)
 		return
 	}
 
 	// Remove associations with groups
 	if err := tx.Exec("DELETE FROM competition_groups WHERE competition_id = ?", competitionID).Error; err != nil {
 		tx.Rollback()
-		respondWithError(c, http.StatusInternalServerError, ErrFailedDeleteCompetition)
+		response.Error(c, http.StatusInternalServerError, ErrFailedDeleteCompetition)
 		return
 	}
 
 	// Delete the competition
 	if err := tx.Delete(&competition).Error; err != nil {
 		tx.Rollback()
-		respondWithError(c, http.StatusInternalServerError, ErrFailedDeleteCompetition)
+		response.Error(c, http.StatusInternalServerError, ErrFailedDeleteCompetition)
 		return
 	}
 
@@ -376,14 +377,14 @@ func FinishCompetition(c *gin.Context) {
 	}
 
 	if !hasCompetitionPermission(user, permissions.COMPETITIONS) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionFinish)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionFinish)
 		return
 	}
 
 	competitionID := c.Param("id")
 	var competition models.Competition
 	if err := database.DB.Where("id = ?", competitionID).First(&competition).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
+		response.Error(c, http.StatusNotFound, ErrCompetitionNotFound)
 		return
 	}
 
@@ -391,7 +392,7 @@ func FinishCompetition(c *gin.Context) {
 	competition.Finished = !competition.Finished
 
 	if err := database.DB.Save(&competition).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedToggleFinished)
+		response.Error(c, http.StatusInternalServerError, ErrFailedToggleFinished)
 		return
 	}
 
@@ -417,14 +418,14 @@ func ToggleCompetitionVisibility(c *gin.Context) {
 	}
 
 	if !hasCompetitionPermission(user, permissions.COMPETITIONS) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
 		return
 	}
 
 	competitionID := c.Param("id")
 	var competition models.Competition
 	if err := database.DB.Where("id = ?", competitionID).First(&competition).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
+		response.Error(c, http.StatusNotFound, ErrCompetitionNotFound)
 		return
 	}
 
@@ -432,7 +433,7 @@ func ToggleCompetitionVisibility(c *gin.Context) {
 	competition.Show = !competition.Show
 
 	if err := database.DB.Save(&competition).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedToggleVisibility)
+		response.Error(c, http.StatusInternalServerError, ErrFailedToggleVisibility)
 		return
 	}
 

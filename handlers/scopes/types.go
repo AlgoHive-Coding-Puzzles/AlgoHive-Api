@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Constantes pour les messages d'erreur
+// Constants for error messages
 const (
 	ErrScopeNotFound          = "Scope not found"
 	ErrRoleNotFound           = "Role not found"
@@ -27,14 +27,14 @@ const (
 	ErrFailedGetScopes        = "Failed to get scopes"
 )
 
-// CreateScopeRequest modèle pour créer un scope
+// CreateScopeRequest model for creating a new scope
 type CreateScopeRequest struct {
 	Name        string   `json:"name" binding:"required"`
 	Description string   `json:"description"`
 	CatalogsIds []string `json:"catalogs_ids" binding:"required"`
 }
 
-// respondWithError envoie une réponse d'erreur standardisée
+// respondWithError sends a JSON response with an error message
 func respondWithError(c *gin.Context, status int, message string) {
 	c.JSON(status, gin.H{"error": message})
 }

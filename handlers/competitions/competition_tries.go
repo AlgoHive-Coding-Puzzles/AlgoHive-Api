@@ -6,6 +6,7 @@ import (
 	"api/models"
 	"api/services"
 	"api/utils/permissions"
+	"api/utils/response"
 	"fmt"
 	"net/http"
 	"time"
@@ -51,13 +52,13 @@ func ExportCompetitionDataExcel(c *gin.Context) {
 
 	// Check if user has access to the competition
 	if !hasCompetitionPermission(user, permissions.COMPETITIONS) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
 		return
 	}
 
 	var competition models.Competition
 	if err := database.DB.First(&competition, "id = ?", competitionID).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
+		response.Error(c, http.StatusNotFound, ErrCompetitionNotFound)
 		return
 	}
 
@@ -118,7 +119,7 @@ func ExportCompetitionDataExcel(c *gin.Context) {
 	`
 
 	if err := database.DB.Raw(logQuery, competitionID).Scan(&logEntries).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to fetch logs data")
+		response.Error(c, http.StatusInternalServerError, "Failed to fetch logs data")
 		return
 	}
 
@@ -190,7 +191,7 @@ func ExportCompetitionDataExcel(c *gin.Context) {
 	`
 
 	if err := database.DB.Raw(leaderboardQuery, competitionID).Scan(&leaderboardEntries).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to fetch leaderboard data")
+		response.Error(c, http.StatusInternalServerError, "Failed to fetch leaderboard data")
 		return
 	}
 
@@ -226,7 +227,7 @@ func ExportCompetitionDataExcel(c *gin.Context) {
 
 	// Write the Excel file to the response
 	if err := f.Write(c.Writer); err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to generate Excel file")
+		response.Error(c, http.StatusInternalServerError, "Failed to generate Excel file")
 		return
 	}
 }
@@ -258,14 +259,14 @@ func GetCompetitionTries(c *gin.Context) {
 	// Administrators can see all tries
 		if err := database.DB.Where("competition_id = ?", competitionID).
 			Preload("User.Groups").Find(&tries).Error; err != nil {
-			respondWithError(c, http.StatusInternalServerError, "Failed to fetch tries")
+			response.Error(c, http.StatusInternalServerError, "Failed to fetch tries")
 			return
 		}
 	} else {
 		// Normal users can only see their own tries
 		if err := database.DB.Where("competition_id = ? AND user_id = ?", 
 			competitionID, user.ID).Preload("User.Groups").Find(&tries).Error; err != nil {
-			respondWithError(c, http.StatusInternalServerError, "Failed to fetch tries")
+			response.Error(c, http.StatusInternalServerError, "Failed to fetch tries")
 			return
 		}
 	}
@@ -295,13 +296,13 @@ func GetCompetitionStatistics(c *gin.Context) {
 
     // Check if user has access to the competition
     if !userHasAccessToCompetition(user.ID, competitionID) && !hasCompetitionPermission(user, permissions.COMPETITIONS) {
-        respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
+        response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
         return
     }
 
     var competition models.Competition
     if err := database.DB.First(&competition, "id = ?", competitionID).Error; err != nil {
-        respondWithError(c, http.StatusNotFound, ErrCompetitionNotFound)
+        response.Error(c, http.StatusNotFound, ErrCompetitionNotFound)
         return
     }
 
@@ -341,7 +342,7 @@ func GetCompetitionStatistics(c *gin.Context) {
     `
 
     if err := database.DB.Raw(query, competitionID).Scan(&userStats).Error; err != nil {
-        respondWithError(c, http.StatusInternalServerError, "Failed to fetch statistics")
+        response.Error(c, http.StatusInternalServerError, "Failed to fetch statistics")
         return
     }
 
@@ -407,14 +408,14 @@ func GetUserCompetitionTries(c *gin.Context) {
 
 	// Check if user has permission to view others' tries
 	if user.ID != targetUserID && !hasCompetitionPermission(user, permissions.COMPETITIONS)  {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionViewTries)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionViewTries)
 		return
 	}
 
 	var tries []models.Try
 	if err := database.DB.Where("competition_id = ? AND user_id = ?", 
 		competitionID, targetUserID).Preload("User.Groups").Find(&tries).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to fetch tries")
+		response.Error(c, http.StatusInternalServerError, "Failed to fetch tries")
 		return
 	}
 

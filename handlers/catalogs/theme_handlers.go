@@ -4,6 +4,7 @@ import (
 	"api/config"
 	"api/database"
 	"api/models"
+	"api/utils/response"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -11,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetThemesFromCatalog récupère tous les thèmes d'un catalogue
+// GetThemesFromCatalog Fetch all the themes from a single API from it's ID
 // @Summary Get all the themes from a single API from it's ID
 // @Description Get all the themes from a single API from it's ID
 // @Tags Catalogs
@@ -44,28 +45,28 @@ func GetThemesFromCatalog(c *gin.Context) {
     // Cache miss or error - fetch from database and API
     var catalog models.Catalog
     if err := database.DB.First(&catalog, "id = ?", catalogID).Error; err != nil {
-        respondWithError(c, http.StatusNotFound, ErrCatalogNotFound)
+        response.Error(c, http.StatusNotFound, ErrCatalogNotFound)
         return
     }
 
-    // Contacter l'API à l'adresse catalog.Address/themes
+    // Contact the API at the address catalog.Address/themes
     apiURL := catalog.Address + "/themes"
     
     resp, err := http.Get(apiURL)
     if err != nil {
-        respondWithError(c, http.StatusInternalServerError, ErrAPIReachFailed)
+        response.Error(c, http.StatusInternalServerError, ErrAPIReachFailed)
         return
     }
     defer resp.Body.Close()
 
     if resp.StatusCode != http.StatusOK {
-        respondWithError(c, resp.StatusCode, ErrAPIReachFailed)
+        response.Error(c, resp.StatusCode, ErrAPIReachFailed)
         return
     }
 
     var themes []ThemeResponse
     if err := json.NewDecoder(resp.Body).Decode(&themes); err != nil {
-        respondWithError(c, http.StatusInternalServerError, ErrDecodeResponseFailed)
+        response.Error(c, http.StatusInternalServerError, ErrDecodeResponseFailed)
         return
     }
 
@@ -82,7 +83,7 @@ func GetThemesFromCatalog(c *gin.Context) {
     c.JSON(http.StatusOK, themes)
 }
 
-// GetThemeDetailsFromCatalog récupère les détails d'un thème spécifique d'un catalogue
+// GetThemeDetailsFromCatalog fetch details of a specific theme from a single API from it's ID
 // @Summary Get details of a specific theme from a single API from it's ID
 // @Description Get details of a specific theme from a single API from it's ID
 // @Tags Catalogs
@@ -118,28 +119,28 @@ func GetThemeDetailsFromCatalog(c *gin.Context) {
     // Cache miss or error - fetch from database and API
     var catalog models.Catalog
     if err := database.DB.First(&catalog, "id = ?", catalogID).Error; err != nil {
-        respondWithError(c, http.StatusNotFound, ErrCatalogNotFound)
+        response.Error(c, http.StatusNotFound, ErrCatalogNotFound)
         return
     }
 
-    // Contacter l'API à l'adresse catalog.Address/themes/themeID
+    // Contact the API at the address catalog.Address/theme?name=themeID
     apiURL := catalog.Address + "/theme?name=" + themeID
     
     resp, err := http.Get(apiURL)
     if err != nil {
-        respondWithError(c, http.StatusInternalServerError, ErrAPIReachFailed)
+        response.Error(c, http.StatusInternalServerError, ErrAPIReachFailed)
         return
     }
     defer resp.Body.Close()
 
     if resp.StatusCode != http.StatusOK {
-        respondWithError(c, resp.StatusCode, ErrAPIReachFailed)
+        response.Error(c, resp.StatusCode, ErrAPIReachFailed)
         return
     }
 
     var themeDetails ThemeResponse
     if err := json.NewDecoder(resp.Body).Decode(&themeDetails); err != nil {
-        respondWithError(c, http.StatusInternalServerError, ErrDecodeResponseFailed)
+        response.Error(c, http.StatusInternalServerError, ErrDecodeResponseFailed)
         return
     }
 

@@ -53,11 +53,6 @@ type AuthResponse struct {
 	Groups        []models.Group `json:"groups"`
 }
 
-// respondWithError sends a standardized error response
-func respondWithError(c *gin.Context, status int, message string) {
-	c.JSON(status, gin.H{"error": message})
-}
-
 // setCookieToken sets the authentication token as a secure HTTP-only cookie
 func setCookieToken(c *gin.Context, token string, rememberMe bool) {
 	var maxAge time.Duration

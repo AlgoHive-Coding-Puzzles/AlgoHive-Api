@@ -67,7 +67,7 @@ func AttachScopeToRole(c *gin.Context) {
 
     // Find scope
     var scope models.Scope
-    if err := tx.Where("id = ?", scopeID).First(&scope).Error; err != nil {
+    if err := tx.First(&scope, "id = ?", scopeID).Error; err != nil {
         tx.Rollback()
         if err == gorm.ErrRecordNotFound {
             response.Error(c, http.StatusNotFound, ErrScopeNotFound)
@@ -79,7 +79,7 @@ func AttachScopeToRole(c *gin.Context) {
 
     // Find role
     var role models.Role
-    if err := tx.Where("id = ?", roleID).First(&role).Error; err != nil {
+    if err := tx.First(&role, "id = ?", roleID).Error; err != nil {
         tx.Rollback()
         if err == gorm.ErrRecordNotFound {
             response.Error(c, http.StatusNotFound, ErrRoleNotFound)
@@ -118,7 +118,7 @@ func AttachScopeToRole(c *gin.Context) {
         Preload("Roles").
         Preload("Catalogs").
         Preload("Groups").
-        First(&scope, scope.ID).Error; err != nil {
+        First(&scope, "id = ?", scope.ID).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Association created but failed to retrieve details")
         return
     }
@@ -173,7 +173,7 @@ func DetachScopeFromRole(c *gin.Context) {
 
     // Find scope
     var scope models.Scope
-    if err := tx.Where("id = ?", scopeID).First(&scope).Error; err != nil {
+    if err := tx.First(&scope, "id = ?", scopeID).Error; err != nil {
         tx.Rollback()
         if err == gorm.ErrRecordNotFound {
             response.Error(c, http.StatusNotFound, ErrScopeNotFound)
@@ -185,7 +185,7 @@ func DetachScopeFromRole(c *gin.Context) {
 
     // Find role
     var role models.Role
-    if err := tx.Where("id = ?", roleID).First(&role).Error; err != nil {
+    if err := tx.First(&role, "id = ?", roleID).Error; err != nil {
         tx.Rollback()
         if err == gorm.ErrRecordNotFound {
             response.Error(c, http.StatusNotFound, ErrRoleNotFound)
@@ -213,7 +213,7 @@ func DetachScopeFromRole(c *gin.Context) {
         Preload("Roles").
         Preload("Catalogs").
         Preload("Groups").
-        First(&scope, scope.ID).Error; err != nil {
+        First(&scope, "id = ?", scopeID).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Association removed but failed to retrieve details")
         return
     }

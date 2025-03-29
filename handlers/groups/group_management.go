@@ -101,10 +101,9 @@ func GetGroup(c *gin.Context) {
     
     err = withTimeout(func(ctx context.Context) error {
         return database.DB.WithContext(ctx).
-            Where("id = ?", groupID).
             Preload("Users").
             Preload("Competitions").
-            First(&group).Error
+            First(&group, "id = ?", groupID).Error
     })
     
     if err != nil {
@@ -208,7 +207,7 @@ func DeleteGroup(c *gin.Context) {
     // Only fetch the basic group data first for permission checking
     var group models.Group
     err = withTimeout(func(ctx context.Context) error {
-        return database.DB.WithContext(ctx).Where("id = ?", groupID).First(&group).Error
+        return database.DB.WithContext(ctx).First(&group, "id = ?", groupID).Error
     })
     
     if err != nil {
@@ -287,8 +286,7 @@ func UpdateGroup(c *gin.Context) {
     err = withTimeout(func(ctx context.Context) error {
         return database.DB.WithContext(ctx).
             Select("id").
-            Where("id = ?", groupID).
-            First(&group).Error
+            First(&group, "id = ?", groupID).Error
     })
     
     if err != nil {

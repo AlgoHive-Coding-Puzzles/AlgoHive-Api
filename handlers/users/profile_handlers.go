@@ -95,7 +95,7 @@ func UpdateUserProfile(c *gin.Context) {
     
     // Retrieve the updated user to return
     var updatedUser models.User
-    if err := database.DB.Where("id = ?", user.ID).First(&updatedUser).Error; err != nil {
+    if err := database.DB.First(&updatedUser, "id = ?", user.ID).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Profile updated but failed to retrieve updated data")
         return
     }
@@ -143,7 +143,7 @@ func UpdateTargetUserProfile(c *gin.Context) {
     
     // Find the target user by ID
     var targetUser models.User
-    if err := database.DB.Where("id = ?", userId).First(&targetUser).Error; err != nil {
+    if err := database.DB.First(&targetUser, "id = ?", userId).Error; err != nil {
         if err == gorm.ErrRecordNotFound {
             response.Error(c, http.StatusNotFound, ErrUserNotFound)
         } else {

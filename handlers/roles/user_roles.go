@@ -46,7 +46,7 @@ func AttachRoleToUser(c *gin.Context) {
 
     // Get target user
     var targetUser models.User
-    if err := tx.Where("id = ?", targetUserID).First(&targetUser).Error; err != nil {
+    if err := tx.First(&targetUser, "id = ?", targetUserID).Error; err != nil {
         tx.Rollback()
         response.Error(c, http.StatusNotFound, ErrUserNotFound)
         return
@@ -54,7 +54,7 @@ func AttachRoleToUser(c *gin.Context) {
 
     // Check if role exists
     var role models.Role
-    if err := tx.Where("id = ?", roleID).First(&role).Error; err != nil {
+    if err := tx.First(&role, "id = ?", roleID).Error; err != nil {
         tx.Rollback()
         response.Error(c, http.StatusNotFound, ErrRoleNotFound)
         return
@@ -91,7 +91,7 @@ func AttachRoleToUser(c *gin.Context) {
     }
 
     // Fetch the updated user with roles for response
-    if err := database.DB.Preload("Roles").Where("id = ?", targetUserID).First(&targetUser).Error; err != nil {
+    if err := database.DB.Preload("Roles").First(&targetUser, "id = ?", targetUserID).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Failed to fetch updated user data")
         return
     }
@@ -134,7 +134,7 @@ func DetachRoleFromUser(c *gin.Context) {
 
     // Verify user exists
     var targetUser models.User
-    if err := tx.Where("id = ?", targetUserID).First(&targetUser).Error; err != nil {
+    if err := tx.First(&targetUser, "id = ?", targetUserID).Error; err != nil {
         tx.Rollback()
         response.Error(c, http.StatusNotFound, ErrUserNotFound)
         return
@@ -142,7 +142,7 @@ func DetachRoleFromUser(c *gin.Context) {
 
     // Verify role exists
     var role models.Role
-    if err := tx.Where("id = ?", roleID).First(&role).Error; err != nil {
+    if err := tx.First(&role, "id = ?", roleID).Error; err != nil {
         tx.Rollback()
         response.Error(c, http.StatusNotFound, ErrRoleNotFound)
         return
@@ -179,7 +179,7 @@ func DetachRoleFromUser(c *gin.Context) {
     }
 
     // Fetch the updated user with roles for response
-    if err := database.DB.Preload("Roles").Where("id = ?", targetUserID).First(&targetUser).Error; err != nil {
+    if err := database.DB.Preload("Roles").First(&targetUser, "id = ?", targetUserID).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Failed to fetch updated user data")
         return
     }

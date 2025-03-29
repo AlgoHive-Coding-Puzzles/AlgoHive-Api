@@ -205,7 +205,7 @@ func CreateScope(c *gin.Context) {
     }
 
     // Reload the scope with associations for response
-    if err := database.DB.Preload("Catalogs").First(&scope, scope.ID).Error; err != nil {
+    if err := database.DB.Preload("Catalogs").First(&scope, "id = ?", scope.ID).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Scope created but failed to retrieve details: "+err.Error())
         return
     }
@@ -322,7 +322,7 @@ func UpdateScope(c *gin.Context) {
     }
 
     // Reload scope with all associations for response
-    if err := database.DB.Preload("Catalogs").Preload("Roles").Preload("Groups").First(&scope, scope.ID).Error; err != nil {
+    if err := database.DB.Preload("Catalogs").Preload("Roles").Preload("Groups").First(&scope, "id = ?", scope.ID).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Scope updated but failed to retrieve details")
         return
     }

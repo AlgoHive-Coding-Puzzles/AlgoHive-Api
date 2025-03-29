@@ -13,7 +13,7 @@ import (
 func userCanManageGroup(userID string, group *models.Group) bool {
 	// Fetch in cascade the user with roles and scopes
 	var user models.User
-	if err := database.DB.Where("id = ?", userID).Preload("Roles.Scopes.Groups").First(&user).Error; err != nil {
+	if err := database.DB.Preload("Roles.Scopes.Groups").First(&user, "id = ?", userID).Error; err != nil {
 		return false
 	}
 	

@@ -83,7 +83,7 @@ func CreateRole(c *gin.Context) {
     }
 
     // Fetch the complete role with associations for response
-    if err := database.DB.Preload("Scopes").First(&role, role.ID).Error; err != nil {
+    if err := database.DB.Preload("Scopes").First(&role, "id = ?", role.ID).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Failed to retrieve created role")
         return
     }
@@ -148,7 +148,7 @@ func GetRoleByID(c *gin.Context) {
     roleID := c.Param("role_id")
 
     var role models.Role
-    if err := database.DB.Where("id = ?", roleID).Preload("Users").Preload("Scopes").First(&role).Error; err != nil {
+    if err := database.DB.Preload("Users").Preload("Scopes").First(&role, "id = ?",roleID).Error; err != nil {
         response.Error(c, http.StatusNotFound, ErrRoleNotFound)
         return
     }
@@ -185,7 +185,7 @@ func UpdateRoleByID(c *gin.Context) {
     roleID := c.Param("role_id")
 
     var role models.Role
-    if err := database.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
+    if err := database.DB.First(&role, "id = ?", roleID).Error; err != nil {
         response.Error(c, http.StatusNotFound, ErrRoleNotFound)
         return
     }
@@ -253,7 +253,7 @@ func UpdateRoleByID(c *gin.Context) {
     }
 
     // Fetch the updated role with all its associations for the response
-    if err := database.DB.Preload("Users").Preload("Scopes").Where("id = ?", roleID).First(&role).Error; err != nil {
+    if err := database.DB.Preload("Users").Preload("Scopes").First(&role, "id = ?", roleID).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Failed to fetch updated role")
         return
     }
@@ -288,7 +288,7 @@ func DeleteRole(c *gin.Context) {
     roleID := c.Param("role_id")
 
     var role models.Role
-    if err := database.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
+    if err := database.DB.First(&role, "id = ?", roleID).Error; err != nil {
         response.Error(c, http.StatusNotFound, ErrRoleNotFound)
         return
     }

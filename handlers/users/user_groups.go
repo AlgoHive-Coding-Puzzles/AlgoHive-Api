@@ -127,7 +127,7 @@ func CreateUserAndAttachGroup(c *gin.Context) {
 
     // Fetch the complete user with associations
     var completeUser models.User
-    if err := database.DB.Preload("Groups").Where("id = ?", targetUser.ID).First(&completeUser).Error; err != nil {
+    if err := database.DB.Preload("Groups").First(&completeUser, "id = ?", targetUser.ID).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "User created but failed to fetch complete data")
         return
     }
@@ -165,7 +165,7 @@ func CreateBulkUsersAndAttachGroup(c *gin.Context) {
     
     // Check that the group exists
     var group models.Group
-    if err := database.DB.Where("id = ?", groupID).First(&group).Error; err != nil {
+    if err := database.DB.First(&group, "id = ?", groupID).Error; err != nil {
         response.Error(c, http.StatusNotFound, ErrGroupNotFound)
         return
     }
@@ -256,7 +256,7 @@ func DeleteAllUsersFromGroup(c *gin.Context) {
 
     // Check that the group exists
     var group models.Group
-    if err := database.DB.Where("id = ?", groupID).First(&group).Error; err != nil {
+    if err := database.DB.First(&group, "id = ?", groupID).Error; err != nil {
         response.Error(c, http.StatusNotFound, ErrGroupNotFound)
         return
     }
@@ -348,7 +348,7 @@ func ImportUsersFromXLSXToGroup(c *gin.Context) {
 
     // Check that the group exists
     var group models.Group
-    if err := database.DB.Where("id = ?", groupID).First(&group).Error; err != nil {
+    if err := database.DB.First(&group, "id = ?", groupID).Error; err != nil {
         response.Error(c, http.StatusNotFound, ErrGroupNotFound)
         return
     }

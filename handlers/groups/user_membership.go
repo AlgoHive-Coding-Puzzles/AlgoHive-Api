@@ -38,8 +38,7 @@ func AddUserToGroup(c *gin.Context) {
     var group models.Group
     err = withTimeout(func(ctx context.Context) error {
         return database.DB.WithContext(ctx).
-            Where("id = ?", groupID).
-            First(&group).Error
+            First(&group, "id = ?", groupID).Error
     })
     
     if err != nil {
@@ -58,8 +57,7 @@ func AddUserToGroup(c *gin.Context) {
     err = withTimeout(func(ctx context.Context) error {
         return database.DB.WithContext(ctx).
             Select("id").
-            Where("id = ?", targetUserID).
-            First(&targetUser).Error
+            First(&targetUser, "id = ?", targetUserID).Error
     })
     
     if err != nil {
@@ -128,8 +126,7 @@ func RemoveUserFromGroup(c *gin.Context) {
     var group models.Group
     err = withTimeout(func(ctx context.Context) error {
         return database.DB.WithContext(ctx).
-            Where("id = ?", groupID).
-            First(&group).Error
+            First(&group, "id = ?", groupID).Error
     })
     
     if err != nil {
@@ -148,8 +145,7 @@ func RemoveUserFromGroup(c *gin.Context) {
     err = withTimeout(func(ctx context.Context) error {
         return database.DB.WithContext(ctx).
             Select("id").
-            Where("id = ?", targetUserID).
-            First(&targetUser).Error
+            First(&targetUser, "id = ?", targetUserID).Error
     })
     
     if err != nil {

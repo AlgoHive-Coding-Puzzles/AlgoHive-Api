@@ -177,7 +177,7 @@ func DeleteUser(c *gin.Context) {
 
     // Check if target user exists
     var targetUser models.User
-    if err := database.DB.Where("id = ?", userID).First(&targetUser).Error; err != nil {
+    if err := database.DB.First(&targetUser, "id = ?", userID).Error; err != nil {
         if errors.Is(err, gorm.ErrRecordNotFound) {
             response.Error(c, http.StatusNotFound, ErrUserNotFound)
         } else {
@@ -347,7 +347,7 @@ func ToggleBlockUser(c *gin.Context) {
     
     // Check if target user exists
     var targetUser models.User
-    if err := database.DB.Where("id = ?", userID).First(&targetUser).Error; err != nil {
+    if err := database.DB.First(&targetUser, "id = ?", userID).Error; err != nil {
         if errors.Is(err, gorm.ErrRecordNotFound) {
             response.Error(c, http.StatusNotFound, ErrUserNotFound)
         } else {
@@ -387,7 +387,7 @@ func ToggleBlockUser(c *gin.Context) {
     }
     
     // Retrieve the updated user to return
-    if err := database.DB.Preload("Roles").Preload("Groups").Where("id = ?", userID).First(&targetUser).Error; err != nil {
+    if err := database.DB.Preload("Roles").Preload("Groups").First(&targetUser, "id = ?", userID).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "User updated but failed to retrieve updated data")
         return
     }

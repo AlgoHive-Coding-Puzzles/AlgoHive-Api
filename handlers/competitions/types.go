@@ -3,8 +3,8 @@ package competitions
 // Constants for error messages
 const (
 	ErrCompetitionNotFound      = "Competition not found"
+	ErrCatalogNotFound          = "Catalog not found"
 	ErrGroupNotFound            = "Group not found"
-	ErrCatalogNotFound          = "API environment not found"
 	ErrNoPermissionView         = "User does not have permission to view competitions"
 	ErrNoPermissionCreate       = "User does not haveCompetitionStatsResponse permission to create competitions"
 	ErrNoPermissionUpdate       = "User does not have permission to update competitions"
@@ -26,14 +26,24 @@ const (
 	ErrUnauthorizedAccess	  = "Unauthorized access to competition"
 )
 
-// CreateCompetitionRequest model for creating a competition
+type UserStat struct {
+	UserID             string  `gorm:"column:user_id"`
+	Firstname          string  `gorm:"column:firstname"`
+	TotalScore         float64 `gorm:"column:total_score"`
+	HighestPuzzleIndex int     `gorm:"column:highest_puzzle_index"`
+	TotalAttempts      int     `gorm:"column:total_attempts"`
+	FirstAction        string  `gorm:"column:first_action"`
+	LastAction         string  `gorm:"column:last_action"`
+}
+
+// CreateCompetitionRequest model for creating a new competition
 type CreateCompetitionRequest struct {
-	Title           string   `json:"title" binding:"required"`
-	Description     string   `json:"description" binding:"required"`
-	CatalogTheme    string   `json:"catalog_theme" binding:"required"`
-	CatalogID       string   `json:"catalog_id" binding:"required"`
-	GroupIds        []string `json:"group_ids"`
-	Show            bool     `json:"show"`
+	Title        string   `json:"title" binding:"required"`
+	Description  string   `json:"description"`
+	CatalogID    string   `json:"catalog_id" binding:"required"`
+	CatalogTheme string   `json:"catalog_theme" binding:"required"`
+	GroupsIDs    []string `json:"groups_ids" binding:"required"`
+	Show         bool     `json:"show"`
 }
 
 // UpdateCompetitionRequest model for updating a competition
@@ -54,6 +64,7 @@ type CompetitionStatsResponse struct {
 	ActiveUsers     int    `json:"active_users"`
 	AverageScore    float64 `json:"average_score"`
 	HighestScore    float64 `json:"highest_score"`
+	UserStats []UserStat `json:"user_statistics"`
 }
 
 // InputRequest model for input request

@@ -3,7 +3,6 @@ package groups
 import (
 	"api/database"
 	"api/models"
-	"api/utils/permissions"
 )
 
 // userCanManageGroup check if the user can manage the group
@@ -60,25 +59,4 @@ func UserOwnsTargetGroups(userID string, targetID string) bool {
     }
     
     return count > 0
-}
-
-// checkGroupPermission check if the user has permission to manage the group
-// userID: User ID
-// groupID: Group ID
-// return: Group object and a boolean indicating if the user can manage the group
-func checkGroupPermission(userID string, groupID string) (*models.Group, bool) {
-	var group models.Group
-	if err := database.DB.Where("id = ?", groupID).First(&group).Error; err != nil {
-		return nil, false
-	}
-	
-	return &group, userCanManageGroup(userID, &group)
-}
-
-// hasGroupPermission check if the user has the required permission
-// user: User object
-// permission: Required permission
-// return: true if the user has the permission
-func hasGroupPermission(user models.User, permission int) bool {
-	return permissions.IsStaff(user) || permissions.RolesHavePermission(user.Roles, permission)
 }

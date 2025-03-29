@@ -16,16 +16,9 @@ const (
 	ErrFailedTxCommit        = "Failed to commit transaction"
 )
 
-// CreateRoleRequest defines the structure for creating a role
-type CreateRoleRequest struct {
+// RoleRequest defines the structure for creating or updating a role
+type RoleRequest struct {
 	Name       string   `json:"name" binding:"required"`
 	Permission int      `json:"permission"`
-	ScopesIds  []string `json:"scopes_ids"`
-}
-
-// UpdateRoleRequest defines the structure for updating a role
-type UpdateRoleRequest struct {
-	Name       string   `json:"name"`
-	Permission int      `json:"permission"`
-	ScopesIds  []string `json:"scopes_ids"`
+	ScopesIDs  []string `json:"scopes_ids"`
 }

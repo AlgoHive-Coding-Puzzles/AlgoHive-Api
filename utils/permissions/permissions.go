@@ -4,12 +4,12 @@ import "api/models"
 
 // Permissions allow a specific role to override the default permissions
 const (
-    SCOPES   = 1 << iota // 000001
-    API_ENV              // 000010
-    GROUPS               // 000100
-    COMPETITIONS         // 001000
-    ROLES                // 010000
-    OWNER                // 100000
+    SCOPES   = 1 << iota  // 000001
+    CATALOGS              // 000010
+    GROUPS                // 000100
+    COMPETITIONS          // 001000
+    ROLES                 // 010000
+    OWNER                 // 100000
 )
 
 // Function that returns true if the user is a staff
@@ -38,7 +38,7 @@ func RemovePermission(rolePermissions, permission int) int {
 
 // Function to get the default permissions for an admin
 func GetAdminPermissions() int {
-	return SCOPES | API_ENV | GROUPS | COMPETITIONS | ROLES | OWNER
+	return SCOPES | CATALOGS | GROUPS | COMPETITIONS | ROLES | OWNER
 }
 
 func RolesHavePermission(roles []*models.Role, permission int) bool {

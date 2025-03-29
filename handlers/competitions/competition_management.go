@@ -199,9 +199,9 @@ func CreateCompetition(c *gin.Context) {
 	}
 
 	// Append groups if specified
-	if len(req.GroupIds) > 0 {
+	if len(req.GroupsIDs) > 0 {
 		var groups []models.Group
-		if err := database.DB.Where("id IN ?", req.GroupIds).Find(&groups).Error; err != nil {
+		if err := database.DB.Where("id IN ?", req.GroupsIDs).Find(&groups).Error; err != nil {
 			tx.Rollback()
 			response.Error(c, http.StatusBadRequest, ErrGroupNotFound)
 			return

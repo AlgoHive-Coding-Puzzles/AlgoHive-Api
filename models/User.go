@@ -7,8 +7,8 @@ import (
 // User represents a user in the system with authentication details
 type User struct {
     ID                 string     `gorm:"type:uuid;default:gen_random_uuid();primary_key" json:"id"`
-    Firstname          string     `gorm:"type:varchar(50);not null" json:"firstname"`
-    Lastname           string     `gorm:"type:varchar(50);not null" json:"lastname"`
+    Firstname          string     `gorm:"type:varchar(50);not null" json:"first_name"`
+    Lastname           string     `gorm:"type:varchar(50);not null" json:"last_name"`
     Email              string     `gorm:"type:varchar(255);unique;not null" json:"email"`
     Password           string     `gorm:"type:varchar(255);not null" json:"password"`
     LastConnected      *time.Time `gorm:"type:timestamp" json:"last_connected"` 

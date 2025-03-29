@@ -543,7 +543,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Puzzle ID",
+                        "description": "Puzzle Index",
                         "name": "puzzleID",
                         "in": "path",
                         "required": true
@@ -1748,12 +1748,15 @@
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -1764,7 +1767,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Create a group, only accessible to users with the GROUPS permission",
+                "description": "Create a group, only accessible to users with staff permissions",
                 "consumes": [
                     "application/json"
                 ],
@@ -1794,21 +1797,15 @@
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request or scope not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -1821,7 +1818,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Get all the groups that authenticated user has access to",
+                "description": "Get all groups the authenticated user has access to based on their roles",
                 "consumes": [
                     "application/json"
                 ],
@@ -1843,12 +1840,9 @@
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Error fetching groups",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -1856,7 +1850,7 @@
         },
         "/groups/scope/{scope_id}": {
             "get": {
-                "description": "Get all the groups from a given scope and list the users in each group",
+                "description": "Get all groups belonging to a scope and include their users",
                 "consumes": [
                     "application/json"
                 ],
@@ -1887,12 +1881,9 @@
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Scope not found or error fetching groups",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -1905,7 +1896,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Get a group",
+                "description": "Get a group with its users and competitions",
                 "consumes": [
                     "application/json"
                 ],
@@ -1933,12 +1924,15 @@
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Group not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized access",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -1949,7 +1943,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Update a group name and description",
+                "description": "Update a group's name and/or description fields",
                 "consumes": [
                     "application/json"
                 ],
@@ -1969,7 +1963,7 @@
                         "required": true
                     },
                     {
-                        "description": "Group to update",
+                        "description": "Group information to update",
                         "name": "group",
                         "in": "body",
                         "required": true,
@@ -1980,27 +1974,24 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "No Content"
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Group not found or invalid request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to update group",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -2011,7 +2002,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Delete a group and cascade delete all users and competitions associated with the group",
+                "description": "Delete a group and clear all user and competition associations",
                 "consumes": [
                     "application/json"
                 ],
@@ -2021,7 +2012,7 @@
                 "tags": [
                     "Groups"
                 ],
-                "summary": "Delete a group and cascade delete all users and competitions associated with the group",
+                "summary": "Delete a group",
                 "parameters": [
                     {
                         "type": "string",
@@ -2033,27 +2024,24 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "No Content"
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Group not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete group",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -2066,7 +2054,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Add a user to a group",
+                "description": "Add a user to a group, requires group management permissions",
                 "consumes": [
                     "application/json"
                 ],
@@ -2095,27 +2083,24 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "No Content"
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Group or user not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to add user to group",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -2126,7 +2111,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Remove a user from a group",
+                "description": "Remove a user from a group, requires group management permissions",
                 "consumes": [
                     "application/json"
                 ],
@@ -2155,27 +2140,24 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "No Content"
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Group or user not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to remove user from group",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -2231,6 +2213,15 @@
                                 "$ref": "#/definitions/models.Role"
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             },
@@ -2258,19 +2249,28 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/roles.CreateRoleRequest"
+                            "$ref": "#/definitions/roles.RoleRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/models.Role"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2322,8 +2322,26 @@
                             "$ref": "#/definitions/models.User"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2373,6 +2391,24 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
@@ -2463,7 +2499,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/roles.UpdateRoleRequest"
+                            "$ref": "#/definitions/roles.RoleRequest"
                         }
                     }
                 ],
@@ -2476,6 +2512,15 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2500,7 +2545,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "delete a role and cascade first to roles_scopes and user_roles",
+                "description": "Delete a role and cascade first to roles_scopes and user_roles",
                 "consumes": [
                     "application/json"
                 ],
@@ -2510,7 +2555,7 @@
                 "tags": [
                     "Roles"
                 ],
-                "summary": "delete a role",
+                "summary": "Delete a role",
                 "parameters": [
                     {
                         "type": "string",
@@ -2521,10 +2566,16 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.Role"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
@@ -2692,6 +2743,15 @@
                                 "type": "string"
                             }
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -2732,11 +2792,20 @@
                                 "type": "string"
                             }
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
         },
-        "/scopes/{id}": {
+        "/scopes/{scope_id}": {
             "get": {
                 "security": [
                     {
@@ -2765,7 +2834,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Scope"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -2899,6 +2971,15 @@
                                 "type": "string"
                             }
                         }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -2961,6 +3042,24 @@
                                 "type": "string"
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             },
@@ -3015,6 +3114,24 @@
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3087,11 +3204,11 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Get all users that the current user has access to from his roles -\u003e scopes -\u003e groups",
+                "description": "Get all users that the current user has access to from their roles -\u003e scopes -\u003e groups",
                 "tags": [
                     "Users"
                 ],
-                "summary": "Get All users that the curren user has access to",
+                "summary": "Get All users that the current user has access to",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3099,6 +3216,24 @@
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/models.User"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     }
@@ -3116,7 +3251,7 @@
                 "tags": [
                     "Users"
                 ],
-                "summary": "Toggle block user",
+                "summary": "Toggle Block User",
                 "parameters": [
                     {
                         "type": "string",
@@ -3142,8 +3277,26 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3162,6 +3315,12 @@
                     }
                 ],
                 "description": "Bulk delete users by IDs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "Users"
                 ],
@@ -3193,8 +3352,26 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3248,11 +3425,32 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.User"
+                            }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3470,7 +3668,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Create a new user and attach one or more roles to it",
+                "description": "Create a new user and attach one or more groups to it",
                 "consumes": [
                     "application/json"
                 ],
@@ -3507,6 +3705,24 @@
                                 "type": "string"
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -3519,6 +3735,9 @@
                     }
                 ],
                 "description": "Get the profile information of the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "Users"
                 ],
@@ -3530,8 +3749,8 @@
                             "$ref": "#/definitions/models.User"
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3585,8 +3804,17 @@
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3630,7 +3858,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
@@ -3642,8 +3873,17 @@
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3685,7 +3925,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
@@ -3697,8 +3940,35 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3741,6 +4011,106 @@
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/models.User"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Update the roles of a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update the roles of a user",
+                "parameters": [
+                    {
+                        "description": "User ID with Roles",
+                        "name": "roles",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/users.UserIdWithRoles"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     }
@@ -3789,48 +4159,9 @@
                                 "type": "string"
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/user/roles/{userId}": {
-            "put": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Update the roles of a user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Update the roles of a user",
-                "parameters": [
-                    {
-                        "description": "User ID with Roles",
-                        "name": "roles",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/users.UserIdWithRoles"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.User"
-                        }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3840,6 +4171,15 @@
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3902,8 +4242,35 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3919,7 +4286,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Delete a user by ID, if user isStaff, required ownership permission",
+                "description": "Delete a user by ID, if user is Staff, requires ownership permission",
                 "tags": [
                     "Users"
                 ],
@@ -3946,8 +4313,26 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3969,7 +4354,7 @@
                 "email": {
                     "type": "string"
                 },
-                "firstname": {
+                "first_name": {
                     "type": "string"
                 },
                 "groups": {
@@ -3981,7 +4366,7 @@
                 "last_connected": {
                     "type": "string"
                 },
-                "lastname": {
+                "last_name": {
                     "type": "string"
                 },
                 "permissions": {
@@ -4014,7 +4399,7 @@
                 "password": {
                     "type": "string"
                 },
-                "rememberMe": {
+                "remember_me": {
                     "type": "boolean"
                 }
             }
@@ -4023,18 +4408,18 @@
             "type": "object",
             "required": [
                 "email",
-                "firstname",
-                "lastname",
+                "first_name",
+                "last_name",
                 "password"
             ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
-                "firstname": {
+                "first_name": {
                     "type": "string"
                 },
-                "lastname": {
+                "last_name": {
                     "type": "string"
                 },
                 "password": {
@@ -4072,6 +4457,12 @@
         },
         "catalogs.GetPuzzleInputRequest": {
             "type": "object",
+            "required": [
+                "catalogId",
+                "puzzleId",
+                "themeName",
+                "userId"
+            ],
             "properties": {
                 "catalogId": {
                     "type": "string"
@@ -4165,6 +4556,12 @@
                 },
                 "total_users": {
                     "type": "integer"
+                },
+                "user_statistics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/competitions.UserStat"
+                    }
                 }
             }
         },
@@ -4199,7 +4596,7 @@
             "required": [
                 "catalog_id",
                 "catalog_theme",
-                "description",
+                "groups_ids",
                 "title"
             ],
             "properties": {
@@ -4212,7 +4609,7 @@
                 "description": {
                     "type": "string"
                 },
-                "group_ids": {
+                "groups_ids": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -4262,6 +4659,32 @@
                     "type": "boolean"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "competitions.UserStat": {
+            "type": "object",
+            "properties": {
+                "firstAction": {
+                    "type": "string"
+                },
+                "firstname": {
+                    "type": "string"
+                },
+                "highestPuzzleIndex": {
+                    "type": "integer"
+                },
+                "lastAction": {
+                    "type": "string"
+                },
+                "totalAttempts": {
+                    "type": "integer"
+                },
+                "totalScore": {
+                    "type": "number"
+                },
+                "userID": {
                     "type": "string"
                 }
             }
@@ -4502,7 +4925,7 @@
                 "email": {
                     "type": "string"
                 },
-                "firstname": {
+                "first_name": {
                     "type": "string"
                 },
                 "groups": {
@@ -4520,7 +4943,7 @@
                 "last_connected": {
                     "type": "string"
                 },
-                "lastname": {
+                "last_name": {
                     "type": "string"
                 },
                 "password": {
@@ -4534,28 +4957,22 @@
                 }
             }
         },
-        "roles.CreateRoleRequest": {
+        "response.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "roles.RoleRequest": {
             "type": "object",
             "required": [
                 "name"
             ],
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "permission": {
-                    "type": "integer"
-                },
-                "scopes_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "roles.UpdateRoleRequest": {
-            "type": "object",
             "properties": {
                 "name": {
                     "type": "string"

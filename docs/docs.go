@@ -550,7 +550,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Puzzle ID",
+                        "description": "Puzzle Index",
                         "name": "puzzleID",
                         "in": "path",
                         "required": true
@@ -1755,12 +1755,15 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -1771,7 +1774,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Create a group, only accessible to users with the GROUPS permission",
+                "description": "Create a group, only accessible to users with staff permissions",
                 "consumes": [
                     "application/json"
                 ],
@@ -1801,21 +1804,15 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request or scope not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -1828,7 +1825,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Get all the groups that authenticated user has access to",
+                "description": "Get all groups the authenticated user has access to based on their roles",
                 "consumes": [
                     "application/json"
                 ],
@@ -1850,12 +1847,9 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Error fetching groups",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -1863,7 +1857,7 @@ const docTemplate = `{
         },
         "/groups/scope/{scope_id}": {
             "get": {
-                "description": "Get all the groups from a given scope and list the users in each group",
+                "description": "Get all groups belonging to a scope and include their users",
                 "consumes": [
                     "application/json"
                 ],
@@ -1894,12 +1888,9 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Scope not found or error fetching groups",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -1912,7 +1903,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Get a group",
+                "description": "Get a group with its users and competitions",
                 "consumes": [
                     "application/json"
                 ],
@@ -1940,12 +1931,15 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Group not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized access",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -1956,7 +1950,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Update a group name and description",
+                "description": "Update a group's name and/or description fields",
                 "consumes": [
                     "application/json"
                 ],
@@ -1976,7 +1970,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Group to update",
+                        "description": "Group information to update",
                         "name": "group",
                         "in": "body",
                         "required": true,
@@ -1987,27 +1981,24 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "No Content"
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Group not found or invalid request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to update group",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -2018,7 +2009,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Delete a group and cascade delete all users and competitions associated with the group",
+                "description": "Delete a group and clear all user and competition associations",
                 "consumes": [
                     "application/json"
                 ],
@@ -2028,7 +2019,7 @@ const docTemplate = `{
                 "tags": [
                     "Groups"
                 ],
-                "summary": "Delete a group and cascade delete all users and competitions associated with the group",
+                "summary": "Delete a group",
                 "parameters": [
                     {
                         "type": "string",
@@ -2040,27 +2031,24 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "No Content"
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Group not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete group",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -2073,7 +2061,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Add a user to a group",
+                "description": "Add a user to a group, requires group management permissions",
                 "consumes": [
                     "application/json"
                 ],
@@ -2102,27 +2090,24 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "No Content"
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Group or user not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to add user to group",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -2133,7 +2118,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Remove a user from a group",
+                "description": "Remove a user from a group, requires group management permissions",
                 "consumes": [
                     "application/json"
                 ],
@@ -2162,27 +2147,24 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "No Content"
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Group or user not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unauthorized access",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to remove user from group",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -2238,6 +2220,15 @@ const docTemplate = `{
                                 "$ref": "#/definitions/models.Role"
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             },
@@ -2265,19 +2256,28 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/roles.CreateRoleRequest"
+                            "$ref": "#/definitions/roles.RoleRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/models.Role"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2329,8 +2329,26 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.User"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2380,6 +2398,24 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
@@ -2470,7 +2506,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/roles.UpdateRoleRequest"
+                            "$ref": "#/definitions/roles.RoleRequest"
                         }
                     }
                 ],
@@ -2483,6 +2519,15 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2507,7 +2552,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "delete a role and cascade first to roles_scopes and user_roles",
+                "description": "Delete a role and cascade first to roles_scopes and user_roles",
                 "consumes": [
                     "application/json"
                 ],
@@ -2517,7 +2562,7 @@ const docTemplate = `{
                 "tags": [
                     "Roles"
                 ],
-                "summary": "delete a role",
+                "summary": "Delete a role",
                 "parameters": [
                     {
                         "type": "string",
@@ -2528,10 +2573,16 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.Role"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
@@ -2699,6 +2750,15 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -2739,11 +2799,20 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
         },
-        "/scopes/{id}": {
+        "/scopes/{scope_id}": {
             "get": {
                 "security": [
                     {
@@ -2772,7 +2841,10 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Scope"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -2906,6 +2978,15 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -2968,6 +3049,24 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             },
@@ -3022,6 +3121,24 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3094,11 +3211,11 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Get all users that the current user has access to from his roles -\u003e scopes -\u003e groups",
+                "description": "Get all users that the current user has access to from their roles -\u003e scopes -\u003e groups",
                 "tags": [
                     "Users"
                 ],
-                "summary": "Get All users that the curren user has access to",
+                "summary": "Get All users that the current user has access to",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3106,6 +3223,24 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/models.User"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     }
@@ -3123,7 +3258,7 @@ const docTemplate = `{
                 "tags": [
                     "Users"
                 ],
-                "summary": "Toggle block user",
+                "summary": "Toggle Block User",
                 "parameters": [
                     {
                         "type": "string",
@@ -3149,8 +3284,26 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3169,6 +3322,12 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Bulk delete users by IDs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "Users"
                 ],
@@ -3200,8 +3359,26 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3255,11 +3432,32 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.User"
+                            }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3477,7 +3675,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Create a new user and attach one or more roles to it",
+                "description": "Create a new user and attach one or more groups to it",
                 "consumes": [
                     "application/json"
                 ],
@@ -3514,6 +3712,24 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -3526,6 +3742,9 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Get the profile information of the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "Users"
                 ],
@@ -3537,8 +3756,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.User"
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3592,8 +3811,17 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3637,7 +3865,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
@@ -3649,8 +3880,17 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3692,7 +3932,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
@@ -3704,8 +3947,35 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3748,6 +4018,106 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/models.User"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Update the roles of a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update the roles of a user",
+                "parameters": [
+                    {
+                        "description": "User ID with Roles",
+                        "name": "roles",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/users.UserIdWithRoles"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     }
@@ -3796,48 +4166,9 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/user/roles/{userId}": {
-            "put": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Update the roles of a user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Update the roles of a user",
-                "parameters": [
-                    {
-                        "description": "User ID with Roles",
-                        "name": "roles",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/users.UserIdWithRoles"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.User"
-                        }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3847,6 +4178,15 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3909,8 +4249,35 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3926,7 +4293,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Delete a user by ID, if user isStaff, required ownership permission",
+                "description": "Delete a user by ID, if user is Staff, requires ownership permission",
                 "tags": [
                     "Users"
                 ],
@@ -3953,8 +4320,26 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3976,7 +4361,7 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "firstname": {
+                "first_name": {
                     "type": "string"
                 },
                 "groups": {
@@ -3988,7 +4373,7 @@ const docTemplate = `{
                 "last_connected": {
                     "type": "string"
                 },
-                "lastname": {
+                "last_name": {
                     "type": "string"
                 },
                 "permissions": {
@@ -4021,7 +4406,7 @@ const docTemplate = `{
                 "password": {
                     "type": "string"
                 },
-                "rememberMe": {
+                "remember_me": {
                     "type": "boolean"
                 }
             }
@@ -4030,18 +4415,18 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
-                "firstname",
-                "lastname",
+                "first_name",
+                "last_name",
                 "password"
             ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
-                "firstname": {
+                "first_name": {
                     "type": "string"
                 },
-                "lastname": {
+                "last_name": {
                     "type": "string"
                 },
                 "password": {
@@ -4079,6 +4464,12 @@ const docTemplate = `{
         },
         "catalogs.GetPuzzleInputRequest": {
             "type": "object",
+            "required": [
+                "catalogId",
+                "puzzleId",
+                "themeName",
+                "userId"
+            ],
             "properties": {
                 "catalogId": {
                     "type": "string"
@@ -4172,6 +4563,12 @@ const docTemplate = `{
                 },
                 "total_users": {
                     "type": "integer"
+                },
+                "user_statistics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/competitions.UserStat"
+                    }
                 }
             }
         },
@@ -4206,7 +4603,7 @@ const docTemplate = `{
             "required": [
                 "catalog_id",
                 "catalog_theme",
-                "description",
+                "groups_ids",
                 "title"
             ],
             "properties": {
@@ -4219,7 +4616,7 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
-                "group_ids": {
+                "groups_ids": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -4269,6 +4666,32 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "competitions.UserStat": {
+            "type": "object",
+            "properties": {
+                "firstAction": {
+                    "type": "string"
+                },
+                "firstname": {
+                    "type": "string"
+                },
+                "highestPuzzleIndex": {
+                    "type": "integer"
+                },
+                "lastAction": {
+                    "type": "string"
+                },
+                "totalAttempts": {
+                    "type": "integer"
+                },
+                "totalScore": {
+                    "type": "number"
+                },
+                "userID": {
                     "type": "string"
                 }
             }
@@ -4509,7 +4932,7 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "firstname": {
+                "first_name": {
                     "type": "string"
                 },
                 "groups": {
@@ -4527,7 +4950,7 @@ const docTemplate = `{
                 "last_connected": {
                     "type": "string"
                 },
-                "lastname": {
+                "last_name": {
                     "type": "string"
                 },
                 "password": {
@@ -4541,28 +4964,22 @@ const docTemplate = `{
                 }
             }
         },
-        "roles.CreateRoleRequest": {
+        "response.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "roles.RoleRequest": {
             "type": "object",
             "required": [
                 "name"
             ],
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "permission": {
-                    "type": "integer"
-                },
-                "scopes_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "roles.UpdateRoleRequest": {
-            "type": "object",
             "properties": {
                 "name": {
                     "type": "string"

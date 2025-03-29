@@ -7,6 +7,7 @@ import (
 	"api/utils/permissions"
 	"api/utils/response"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,6 +29,11 @@ func Login(c *gin.Context) {
 	
 	if err := c.ShouldBindJSON(&loginReq); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if len(strings.TrimSpace(loginReq.Email)) == 0 || len(strings.TrimSpace(loginReq.Password)) == 0 {
+		response.Error(c, http.StatusBadRequest, "Email and password cannot be empty")
 		return
 	}
 	
@@ -63,7 +69,7 @@ func Login(c *gin.Context) {
 	now := time.Now()
 	user.LastConnected = &now
 	if err := database.DB.Save(&user).Error; err != nil {
-		response.Error(c, http.StatusInternalServerError, ErrTokenGenerateFailed)
+		response.Error(c, http.StatusInternalServerError, ErrUserLoginFailed)
 		return
 	}
 
@@ -74,6 +80,7 @@ func Login(c *gin.Context) {
 		Firstname:     user.Firstname,
 		Lastname:      user.Lastname,
 		LastConnected: user.LastConnected,
+		Blocked: 	   user.Blocked,
 		Permissions:   permissions.MergeRolePermissions(user.Roles),
 		Roles:         utils.ConvertRoles(user.Roles),
 		Groups:        utils.ConvertGroups(user.Groups),

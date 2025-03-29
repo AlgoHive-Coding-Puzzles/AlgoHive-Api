@@ -168,7 +168,6 @@ func Populate() {
             // If count is different or we need to sync
             if countCatalog != int64(len(catalogsList)) {
                 for _, catalogAddress := range catalogsList {
-                    log.Println("Processing Catalog from API Environment: ", catalogAddress)
                     // Make a GET catalog/name to get the catalog name
                     resp, err := http.Get(fmt.Sprintf("%s/name", catalogAddress))
                     if err != nil {
@@ -209,12 +208,10 @@ func Populate() {
                         existingCatalog.Description = catalogDesc
                         existingCatalog.Address = catalogAddress
                         DB.Save(&existingCatalog)
-                        log.Println("API Environment updated: ", catalogName)
                     } else {
                         // Create new catalog
                         newCatalog := models.Catalog{Name: catalogName, Description: catalogDesc, Address: catalogAddress}
                         DB.Create(&newCatalog)
-                        log.Println("API Environment created: ", catalogName)
                     }
                 }
             }

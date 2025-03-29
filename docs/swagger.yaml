@@ -6,7 +6,7 @@ definitions:
         type: boolean
       email:
         type: string
-      firstname:
+      first_name:
         type: string
       groups:
         items:
@@ -14,7 +14,7 @@ definitions:
         type: array
       last_connected:
         type: string
-      lastname:
+      last_name:
         type: string
       permissions:
         type: integer
@@ -33,7 +33,7 @@ definitions:
         type: string
       password:
         type: string
-      rememberMe:
+      remember_me:
         type: boolean
     required:
     - email
@@ -43,17 +43,17 @@ definitions:
     properties:
       email:
         type: string
-      firstname:
+      first_name:
         type: string
-      lastname:
+      last_name:
         type: string
       password:
         minLength: 8
         type: string
     required:
     - email
-    - firstname
-    - lastname
+    - first_name
+    - last_name
     - password
     type: object
   auth.RequestPasswordResetRequest:
@@ -84,6 +84,11 @@ definitions:
         type: string
       userId:
         type: string
+    required:
+    - catalogId
+    - puzzleId
+    - themeName
+    - userId
     type: object
   catalogs.PuzzleResponse:
     properties:
@@ -137,6 +142,10 @@ definitions:
         type: string
       total_users:
         type: integer
+      user_statistics:
+        items:
+          $ref: '#/definitions/competitions.UserStat'
+        type: array
     type: object
   competitions.CompetitionTry:
     properties:
@@ -163,7 +172,7 @@ definitions:
         type: string
       description:
         type: string
-      group_ids:
+      groups_ids:
         items:
           type: string
         type: array
@@ -174,7 +183,7 @@ definitions:
     required:
     - catalog_id
     - catalog_theme
-    - description
+    - groups_ids
     - title
     type: object
   competitions.InputRequest:
@@ -201,6 +210,23 @@ definitions:
       show:
         type: boolean
       title:
+        type: string
+    type: object
+  competitions.UserStat:
+    properties:
+      firstAction:
+        type: string
+      firstname:
+        type: string
+      highestPuzzleIndex:
+        type: integer
+      lastAction:
+        type: string
+      totalAttempts:
+        type: integer
+      totalScore:
+        type: number
+      userID:
         type: string
     type: object
   groups.CreateGroupRequest:
@@ -358,7 +384,7 @@ definitions:
         type: boolean
       email:
         type: string
-      firstname:
+      first_name:
         type: string
       groups:
         items:
@@ -370,7 +396,7 @@ definitions:
         type: string
       last_connected:
         type: string
-      lastname:
+      last_name:
         type: string
       password:
         type: string
@@ -379,7 +405,14 @@ definitions:
           $ref: '#/definitions/models.Role'
         type: array
     type: object
-  roles.CreateRoleRequest:
+  response.ErrorResponse:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  roles.RoleRequest:
     properties:
       name:
         type: string
@@ -391,17 +424,6 @@ definitions:
         type: array
     required:
     - name
-    type: object
-  roles.UpdateRoleRequest:
-    properties:
-      name:
-        type: string
-      permission:
-        type: integer
-      scopes_ids:
-        items:
-          type: string
-        type: array
     type: object
   scopes.CreateScopeRequest:
     properties:
@@ -787,7 +809,7 @@ paths:
         name: themeID
         required: true
         type: string
-      - description: Puzzle ID
+      - description: Puzzle Index
         in: path
         name: puzzleID
         required: true
@@ -1602,11 +1624,13 @@ paths:
               $ref: '#/definitions/models.Group'
             type: array
         "401":
-          description: Unauthorized
+          description: Unauthorized access
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - Bearer: []
       summary: Get all groups
@@ -1615,7 +1639,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a group, only accessible to users with the GROUPS permission
+      description: Create a group, only accessible to users with staff permissions
       parameters:
       - description: Group to create
         in: body
@@ -1631,17 +1655,13 @@ paths:
           schema:
             $ref: '#/definitions/models.Group'
         "400":
-          description: Bad Request
+          description: Invalid request or scope not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Unauthorized access
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - Bearer: []
       summary: Create a group
@@ -1651,8 +1671,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Delete a group and cascade delete all users and competitions associated
-        with the group
+      description: Delete a group and clear all user and competition associations
       parameters:
       - description: Group ID
         in: path
@@ -1664,30 +1683,27 @@ paths:
       responses:
         "204":
           description: No Content
-          schema:
-            type: string
         "400":
-          description: Bad Request
+          description: Group not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Unauthorized access
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Failed to delete group
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - Bearer: []
-      summary: Delete a group and cascade delete all users and competitions associated
-        with the group
+      summary: Delete a group
       tags:
       - Groups
     get:
       consumes:
       - application/json
-      description: Get a group
+      description: Get a group with its users and competitions
       parameters:
       - description: Group ID
         in: path
@@ -1702,11 +1718,13 @@ paths:
           schema:
             $ref: '#/definitions/models.Group'
         "400":
-          description: Bad Request
+          description: Group not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized access
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - Bearer: []
       summary: Get a group
@@ -1715,14 +1733,14 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update a group name and description
+      description: Update a group's name and/or description fields
       parameters:
       - description: Group ID
         in: path
         name: group_id
         required: true
         type: string
-      - description: Group to update
+      - description: Group information to update
         in: body
         name: group
         required: true
@@ -1733,20 +1751,18 @@ paths:
       responses:
         "204":
           description: No Content
-          schema:
-            type: string
         "400":
-          description: Bad Request
+          description: Group not found or invalid request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Unauthorized access
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Failed to update group
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - Bearer: []
       summary: Update a group name and description
@@ -1756,7 +1772,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Remove a user from a group
+      description: Remove a user from a group, requires group management permissions
       parameters:
       - description: Group ID
         in: path
@@ -1773,20 +1789,18 @@ paths:
       responses:
         "204":
           description: No Content
-          schema:
-            type: string
         "400":
-          description: Bad Request
+          description: Group or user not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Unauthorized access
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Failed to remove user from group
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - Bearer: []
       summary: Remove a user from a group
@@ -1795,7 +1809,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Add a user to a group
+      description: Add a user to a group, requires group management permissions
       parameters:
       - description: Group ID
         in: path
@@ -1812,20 +1826,18 @@ paths:
       responses:
         "204":
           description: No Content
-          schema:
-            type: string
         "400":
-          description: Bad Request
+          description: Group or user not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Unauthorized access
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Failed to add user to group
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - Bearer: []
       summary: Add a user to a group
@@ -1835,7 +1847,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get all the groups that authenticated user has access to
+      description: Get all groups the authenticated user has access to based on their
+        roles
       produces:
       - application/json
       responses:
@@ -1846,11 +1859,9 @@ paths:
               $ref: '#/definitions/models.Group'
             type: array
         "400":
-          description: Bad Request
+          description: Error fetching groups
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - Bearer: []
       summary: Get all the groups that authenticated user has access to
@@ -1860,8 +1871,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get all the groups from a given scope and list the users in each
-        group
+      description: Get all groups belonging to a scope and include their users
       parameters:
       - description: Scope ID
         in: path
@@ -1878,11 +1888,9 @@ paths:
               $ref: '#/definitions/models.Group'
             type: array
         "400":
-          description: Bad Request
+          description: Scope not found or error fetching groups
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       summary: Get all the groups from a given scope
       tags:
       - Groups
@@ -1915,6 +1923,12 @@ paths:
             items:
               $ref: '#/definitions/models.Role'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - Bearer: []
       summary: Get all Roles
@@ -1930,16 +1944,22 @@ paths:
         name: role
         required: true
         schema:
-          $ref: '#/definitions/roles.CreateRoleRequest'
+          $ref: '#/definitions/roles.RoleRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/models.Role'
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string
@@ -1953,7 +1973,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: delete a role and cascade first to roles_scopes and user_roles
+      description: Delete a role and cascade first to roles_scopes and user_roles
       parameters:
       - description: Role ID
         in: path
@@ -1963,10 +1983,14 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
           schema:
-            $ref: '#/definitions/models.Role'
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Not Found
           schema:
@@ -1975,7 +1999,7 @@ paths:
             type: object
       security:
       - Bearer: []
-      summary: delete a role
+      summary: Delete a role
       tags:
       - Roles
     get:
@@ -2021,7 +2045,7 @@ paths:
         name: role
         required: true
         schema:
-          $ref: '#/definitions/roles.UpdateRoleRequest'
+          $ref: '#/definitions/roles.RoleRequest'
       produces:
       - application/json
       responses:
@@ -2031,6 +2055,12 @@ paths:
             $ref: '#/definitions/models.Role'
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string
@@ -2069,8 +2099,20 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.User'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
           schema:
             additionalProperties:
               type: string
@@ -2103,6 +2145,18 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Not Found
           schema:
@@ -2174,7 +2228,7 @@ paths:
       summary: Create a scope
       tags:
       - Scopes
-  /scopes/{id}:
+  /scopes/{scope_id}:
     delete:
       consumes:
       - application/json
@@ -2204,6 +2258,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - Bearer: []
       summary: Delete a scope
@@ -2224,6 +2284,8 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/models.Scope'
         "400":
           description: Bad Request
           schema:
@@ -2317,6 +2379,18 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - Bearer: []
       summary: Detach the scope from a role
@@ -2353,6 +2427,18 @@ paths:
             type: object
         "401":
           description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -2398,6 +2484,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - Bearer: []
       summary: Get all the scopes that a role has access to
@@ -2420,6 +2512,12 @@ paths:
             type: array
         "401":
           description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -2467,7 +2565,7 @@ paths:
       - Support
   /user/:
     get:
-      description: Get all users that the current user has access to from his roles
+      description: Get all users that the current user has access to from their roles
         -> scopes -> groups
       responses:
         "200":
@@ -2476,14 +2574,26 @@ paths:
             items:
               $ref: '#/definitions/models.User'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - Bearer: []
-      summary: Get All users that the curren user has access to
+      summary: Get All users that the current user has access to
       tags:
       - Users
   /user/{id}:
     delete:
-      description: Delete a user by ID, if user isStaff, required ownership permission
+      description: Delete a user by ID, if user is Staff, requires ownership permission
       parameters:
       - description: User ID
         in: path
@@ -2499,8 +2609,20 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -2539,8 +2661,26 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -2570,19 +2710,33 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Not Found
           schema:
             additionalProperties:
               type: string
             type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - Bearer: []
-      summary: Toggle block user
+      summary: Toggle Block User
       tags:
       - Users
   /user/bulk:
     delete:
+      consumes:
+      - application/json
       description: Bulk delete users by IDs
       parameters:
       - description: User IDs
@@ -2593,6 +2747,8 @@ paths:
           items:
             type: string
           type: array
+      produces:
+      - application/json
       responses:
         "204":
           description: No Content
@@ -2602,8 +2758,20 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -2638,9 +2806,23 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.User'
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
           schema:
             additionalProperties:
               type: string
@@ -2784,7 +2966,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new user and attach one or more roles to it
+      description: Create a new user and attach one or more groups to it
       parameters:
       - description: User Profile with Groups
         in: body
@@ -2805,6 +2987,18 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - Bearer: []
       summary: Create a user and attach one or more groups
@@ -2813,13 +3007,15 @@ paths:
   /user/profile:
     get:
       description: Get the profile information of the authenticated user
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/models.User'
-        "404":
-          description: Not Found
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string
@@ -2853,8 +3049,14 @@ paths:
             additionalProperties:
               type: string
             type: object
-        "404":
-          description: Not Found
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -2882,15 +3084,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.User'
+            additionalProperties:
+              type: string
+            type: object
         "400":
           description: Bad Request
           schema:
             additionalProperties:
               type: string
             type: object
-        "404":
-          description: Not Found
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -2917,15 +3127,35 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.User'
+            additionalProperties:
+              type: string
+            type: object
         "400":
           description: Bad Request
           schema:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -2955,6 +3185,24 @@ paths:
             items:
               $ref: '#/definitions/models.User'
             type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - Bearer: []
       summary: Get All users that the given roles have access to
@@ -2984,12 +3232,29 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - Bearer: []
       summary: Create a user and attach one or more roles
       tags:
       - Users
-  /user/roles/{userId}:
     put:
       consumes:
       - application/json
@@ -3014,8 +3279,20 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string

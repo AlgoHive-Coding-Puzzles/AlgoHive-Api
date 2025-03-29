@@ -11,21 +11,23 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // GetUserProfile retrieves the authenticated user's profile
 // @Summary Get User Profile
 // @Description Get the profile information of the authenticated user
 // @Tags Users
+// @Produce json
 // @Success 200 {object} models.User
-// @Failure 404 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Router /user/profile [get]
 // @Security Bearer
 func GetUserProfile(c *gin.Context) {
-	user, err := middleware.GetUserFromRequest(c)
-	if err != nil {
-		return
-	}
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return // Error already handled by middleware
+    }
     
     // Hide password from response for security
     user.Password = ""
@@ -42,32 +44,65 @@ func GetUserProfile(c *gin.Context) {
 // @Param user body models.User true "User Profile"
 // @Success 200 {object} models.User
 // @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /user/profile [put]
 // @Security Bearer
 func UpdateUserProfile(c *gin.Context) {
-	user, err := middleware.GetUserFromRequest(c)
-	if err != nil {
-		return
-	}
-	
-	var userUpdate models.User
-	if err := c.ShouldBindJSON(&userUpdate); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-	
-	// Update only allowed fields
-	user.Email = userUpdate.Email
-	user.Firstname = userUpdate.Firstname
-	user.Lastname = userUpdate.Lastname
-	
-	if err := database.DB.Save(&user).Error; err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to update profile")
-		return
-	}
-	
-	c.JSON(http.StatusOK, user)
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return // Error already handled by middleware
+    }
+    
+    var userUpdate models.User
+    if err := c.ShouldBindJSON(&userUpdate); err != nil {
+        response.Error(c, http.StatusBadRequest, err.Error())
+        return
+    }
+    
+    // Input validation
+    if userUpdate.Email == "" || userUpdate.Firstname == "" || userUpdate.Lastname == "" {
+        response.Error(c, http.StatusBadRequest, "Email, first name, and last name are required")
+        return
+    }
+    
+    // Use a transaction to ensure atomicity
+    tx := database.DB.Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+        }
+    }()
+    
+    // Update only allowed fields
+    updatedFields := map[string]interface{}{
+        "email":     userUpdate.Email,
+        "firstname": userUpdate.Firstname,
+        "lastname":  userUpdate.Lastname,
+    }
+    
+    if err := tx.Model(&user).Updates(updatedFields).Error; err != nil {
+        tx.Rollback()
+        response.Error(c, http.StatusInternalServerError, "Failed to update profile")
+        return
+    }
+    
+    if err := tx.Commit().Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Failed to commit transaction")
+        return
+    }
+    
+    // Retrieve the updated user to return
+    var updatedUser models.User
+    if err := database.DB.Where("id = ?", user.ID).First(&updatedUser).Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Profile updated but failed to retrieve updated data")
+        return
+    }
+    
+    // Hide password
+    updatedUser.Password = ""
+    
+    c.JSON(http.StatusOK, updatedUser)
 }
 
 // UpdateTargetUserProfile updates the target user's profile
@@ -80,48 +115,91 @@ func UpdateUserProfile(c *gin.Context) {
 // @Param user body models.User true "User Profile"
 // @Success 200 {object} models.User
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
 // @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /user/{id} [put]
 // @Security Bearer
 func UpdateTargetUserProfile(c *gin.Context) {
-	user, err := middleware.GetUserFromRequest(c)
-	if err != nil {
-		return
-	}
-	
-	// Get the target user ID from the URL parameter
-	userId := c.Param("id")
-	if userId == "" {
-		response.Error(c, http.StatusBadRequest, "User ID is required")
-		return
-	}
-	
-	// Find the target user by ID
-	var userUpdate models.User
-	if err := database.DB.Where("id = ?", userId).First(&userUpdate).Error; err != nil {
-		response.Error(c, http.StatusNotFound, "User not found")
-		return
-	}
+    currentUser, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return // Error already handled by middleware
+    }
+    
+    // Get the target user ID from the URL parameter
+    userId := c.Param("id")
+    if userId == "" {
+        response.Error(c, http.StatusBadRequest, "User ID is required")
+        return
+    }
+    
+    // Find the target user by ID
+    var targetUser models.User
+    if err := database.DB.Where("id = ?", userId).First(&targetUser).Error; err != nil {
+        if err == gorm.ErrRecordNotFound {
+            response.Error(c, http.StatusNotFound, ErrUserNotFound)
+        } else {
+            response.Error(c, http.StatusInternalServerError, "Database error when finding user")
+        }
+        return
+    }
 
-	// Check if the authenticated user has permission to update the target user's profile
-	if !HasPermissionForUser(user, userUpdate.ID, permissions.GROUPS) && !HasPermissionForUser(user, userUpdate.ID, permissions.OWNER) {
-		response.Error(c, http.StatusForbidden, "You do not have permission to update this user's profile")
-		return
-	}
-	
-	if err := c.ShouldBindJSON(&userUpdate); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-	
-	userUpdate.ID = userId
-	
-	if err := database.DB.Save(&userUpdate).Error; err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to update profile")
-		return
-	}
-	
-	c.JSON(http.StatusOK, userUpdate)
+    // Check if the authenticated user has permission to update the target user's profile
+    if !HasPermissionForUser(currentUser, targetUser.ID, permissions.GROUPS) && 
+       !HasPermissionForUser(currentUser, targetUser.ID, permissions.OWNER) {
+        response.Error(c, http.StatusForbidden, "You do not have permission to update this user's profile")
+        return
+    }
+    
+    var userUpdate models.User
+    if err := c.ShouldBindJSON(&userUpdate); err != nil {
+        response.Error(c, http.StatusBadRequest, err.Error())
+        return
+    }
+    
+    // Input validation
+    if userUpdate.Email == "" || userUpdate.Firstname == "" || userUpdate.Lastname == "" {
+        response.Error(c, http.StatusBadRequest, "Email, first name, and last name are required")
+        return
+    }
+    
+    // Use a transaction to ensure atomicity
+    tx := database.DB.Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+        }
+    }()
+    
+    // Update only allowed fields
+    updatedFields := map[string]interface{}{
+        "email":     userUpdate.Email,
+        "firstname": userUpdate.Firstname,
+        "lastname":  userUpdate.Lastname,
+    }
+    
+    if err := tx.Model(&targetUser).Where("id = ?", userId).Updates(updatedFields).Error; err != nil {
+        tx.Rollback()
+        response.Error(c, http.StatusInternalServerError, "Failed to update profile")
+        return
+    }
+    
+    if err := tx.Commit().Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Failed to commit transaction")
+        return
+    }
+    
+    // Retrieve the updated user to return
+    if err := database.DB.Where("id = ?", userId).First(&targetUser).Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Profile updated but failed to retrieve updated data")
+        return
+    }
+    
+    // Hide password
+    targetUser.Password = ""
+    
+    c.JSON(http.StatusOK, targetUser)
 }
 
 // ResetUserPassword resets the target user's password
@@ -131,57 +209,87 @@ func UpdateTargetUserProfile(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param userId path string true "User ID"
-// @Success 200 {object} models.User
+// @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
 // @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /user/resetpass/{id} [put]
 // @Security Bearer
 func ResetUserPassword(c *gin.Context) {
-	user, err := middleware.GetUserFromRequest(c)
-	if err != nil {
-		return
-	}
-	
-	// Get the target user ID from the URL parameter
-	userId := c.Param("id")
-	if userId == "" {
-		response.Error(c, http.StatusBadRequest, "User ID is required")
-		return
-	}
-	// Find the target user by ID
-	var userUpdate models.User
-	if err := database.DB.Where("id = ?", userId).First(&userUpdate).Error; err != nil {
-		response.Error(c, http.StatusNotFound, "User not found")
-		return
-	}
+    currentUser, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return // Error already handled by middleware
+    }
+    
+    // Get the target user ID from the URL parameter
+    userId := c.Param("id")
+    if userId == "" {
+        response.Error(c, http.StatusBadRequest, "User ID is required")
+        return
+    }
+    
+    // Find the target user by ID
+    var targetUser models.User
+    if err := database.DB.Where("id = ?", userId).First(&targetUser).Error; err != nil {
+        if err == gorm.ErrRecordNotFound {
+            response.Error(c, http.StatusNotFound, ErrUserNotFound)
+        } else {
+            response.Error(c, http.StatusInternalServerError, "Database error when finding user")
+        }
+        return
+    }
 
-	// Check if the authenticated user has permission to reset the target user's password
-	if !HasPermissionForUser(user, userUpdate.ID, permissions.GROUPS) {
-		response.Error(c, http.StatusForbidden, "You do not have permission to reset this user's password")
-		return
-	}
-	
-	// Create a default admin user with a default hashed password from either the .env file or the DefaultPassword constant
-	password := config.DefaultPassword
-	if config.DefaultPassword != "" {
-		password = config.DefaultPassword
-	}
+    // Check if the authenticated user has permission to reset the target user's password
+    if !HasPermissionForUser(currentUser, targetUser.ID, permissions.GROUPS) && 
+       !permissions.RolesHavePermission(currentUser.Roles, permissions.OWNER) {
+        response.Error(c, http.StatusForbidden, "You do not have permission to reset this user's password")
+        return
+    }
+    
+    // Get default password from config or use a fallback
+    password := config.DefaultPassword
+    if password == "" {
+        response.Error(c, http.StatusInternalServerError, "Default password not configured")
+        return
+    }
 
-	password, err = utils.HashPassword(password)
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to hash password")
-		return
-	}
+    hashedPassword, err := utils.HashPassword(password)
+    if err != nil {
+        response.Error(c, http.StatusInternalServerError, ErrFailedToHashPassword)
+        return
+    }
 
-	userUpdate.Password = password
-	userUpdate.HasDefaultPassword = true
-	
-	if err := database.DB.Save(&userUpdate).Error; err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to update profile")
-		return
-	}
-	
-	c.JSON(http.StatusOK, user)
+    // Use a transaction to ensure atomicity
+    tx := database.DB.Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+        }
+    }()
+    
+    // Update password fields
+    updateFields := map[string]interface{}{
+        "password":            hashedPassword,
+        "has_default_password": true,
+    }
+    
+    if err := tx.Model(&targetUser).Updates(updateFields).Error; err != nil {
+        tx.Rollback()
+        response.Error(c, http.StatusInternalServerError, "Failed to reset password")
+        return
+    }
+    
+    if err := tx.Commit().Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Failed to commit transaction")
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "message": "Password has been reset successfully",
+        "user_id": userId,
+    })
 }
 
 // UpdateUserPassword updates the current user's password
@@ -191,41 +299,71 @@ func ResetUserPassword(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param passwords body PasswordUpdate true "Password Update"
-// @Success 200 {object} models.User
+// @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /user/profile/password [put]
 // @Security Bearer
 func UpdateUserPassword(c *gin.Context) {
-	user, err := middleware.GetUserFromRequest(c)
-	if err != nil {
-		return
-	}
-	
-	var passwordUpdate PasswordUpdate
-	if err := c.ShouldBindJSON(&passwordUpdate); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-	
-	if !utils.CheckPasswordHash(passwordUpdate.OldPassword, user.Password) {
-		response.Error(c, http.StatusUnauthorized, "Old password is incorrect")
-		return
-	}
-	
-	hashedPassword, err := utils.HashPassword(passwordUpdate.NewPassword)
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to hash new password")
-		return
-	}
-	
-	user.Password = hashedPassword
-	user.HasDefaultPassword = false
-	
-	if err := database.DB.Save(&user).Error; err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to update password")
-		return
-	}
-	
-	c.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return // Error already handled by middleware
+    }
+    
+    var passwordUpdate PasswordUpdate
+    if err := c.ShouldBindJSON(&passwordUpdate); err != nil {
+        response.Error(c, http.StatusBadRequest, err.Error())
+        return
+    }
+    
+    // Input validation
+    if passwordUpdate.CurrentPassword == "" || passwordUpdate.NewPassword == "" {
+        response.Error(c, http.StatusBadRequest, "Current password and new password are required")
+        return
+    }
+    
+    if !utils.CheckPasswordHash(passwordUpdate.CurrentPassword, user.Password) {
+        response.Error(c, http.StatusUnauthorized, "Current password is incorrect")
+        return
+    }
+    
+    // Validate password strength
+    if len(passwordUpdate.NewPassword) < 8 {
+        response.Error(c, http.StatusBadRequest, "New password must be at least 8 characters long")
+        return
+    }
+    
+    hashedPassword, err := utils.HashPassword(passwordUpdate.NewPassword)
+    if err != nil {
+        response.Error(c, http.StatusInternalServerError, ErrFailedToHashPassword)
+        return
+    }
+    
+    // Use a transaction to ensure atomicity
+    tx := database.DB.Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+        }
+    }()
+    
+    // Update password fields
+    updateFields := map[string]interface{}{
+        "password":             hashedPassword,
+        "has_default_password": false,
+    }
+    
+    if err := tx.Model(&user).Updates(updateFields).Error; err != nil {
+        tx.Rollback()
+        response.Error(c, http.StatusInternalServerError, "Failed to update password")
+        return
+    }
+    
+    if err := tx.Commit().Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Failed to commit transaction")
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
 }

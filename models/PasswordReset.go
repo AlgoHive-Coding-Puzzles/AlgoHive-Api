@@ -8,5 +8,5 @@ type PasswordReset struct {
     UserID    string    `gorm:"type:uuid;not null" json:"user_id"`
     User      User      `gorm:"foreignkey:UserID" json:"user"`
     Token     string    `gorm:"type:varchar(255);not null;unique" json:"token"`
-	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
 }

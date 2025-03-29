@@ -48,6 +48,6 @@ type UserIdWithRoles struct {
 
 // PasswordUpdate represents a password update request
 type PasswordUpdate struct {
-	OldPassword string `json:"old_password"`
+	CurrentPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
 }

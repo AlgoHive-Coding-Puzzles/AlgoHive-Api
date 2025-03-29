@@ -4,6 +4,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type ErrorResponse struct {
+    Message string `json:"message"`
+    Code    int    `json:"code"`
+}
+
 // Error sends a standardized error response
 func Error(c *gin.Context, status int, message string) {
     c.JSON(status, gin.H{"error": message})

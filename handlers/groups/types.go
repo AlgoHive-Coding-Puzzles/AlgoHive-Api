@@ -20,7 +20,7 @@ const (
 type CreateGroupRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description"`
-	ScopeId     string `json:"scope_id" binding:"required"`
+	ScopeID     string `json:"scope_id" binding:"required"`
 }
 
 // UpdateGroupRequest model for updating a group

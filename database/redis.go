@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -124,4 +125,12 @@ func SetToCache(ctx context.Context, cacheKey string, value interface{}) error {
         return err
     }
     return REDIS.Set(ctx, cacheKey, data, 0).Err()
+}
+
+func SetToCacheWithExpiration(ctx context.Context, cacheKey string, value interface{}, expiration time.Duration) error {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return REDIS.Set(ctx, cacheKey, data, expiration).Err()
 }

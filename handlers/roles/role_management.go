@@ -17,56 +17,78 @@ import (
 // @Tags Roles
 // @Accept json
 // @Produce json
-// @Param role body CreateRoleRequest true "Role Profile"
-// @Success 200 {object} models.Role
+// @Param role body RoleRequest true "Role Profile"
+// @Success 201 {object} models.Role
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Router /roles [post]
 // @Security Bearer
 func CreateRole(c *gin.Context) {
-	user, err := middleware.GetUserFromRequest(c)
-	if err != nil {
-		return
-	}
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return
+    }
 
-	// Check permissions
-	if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
-		response.Error(c, http.StatusUnauthorized, ErrNoPermissionCreate)
-		return
-	}
+    // Check permissions
+    if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
+        response.Error(c, http.StatusUnauthorized, ErrNoPermissionCreate)
+        return
+    }
 
-	var createRoleRequest CreateRoleRequest
-	if err := c.ShouldBindJSON(&createRoleRequest); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
+    var createRoleRequest RoleRequest
+    if err := c.ShouldBindJSON(&createRoleRequest); err != nil {
+        response.Error(c, http.StatusBadRequest, err.Error())
+        return
+    }
 
-	// If scopes are specified, retrieve them
-	var scopePointers []*models.Scope
-	if len(createRoleRequest.ScopesIds) > 0 {
-		var scopes []models.Scope
-		if err := database.DB.Where("id IN (?)", createRoleRequest.ScopesIds).Find(&scopes).Error; err != nil {
-			response.Error(c, http.StatusBadRequest, "Invalid scope IDs")
-			return
-		}
-		
-		for i := range scopes {
-			scopePointers = append(scopePointers, &scopes[i])
-		}
-	}
+    // Create the role with basic information
+    role := models.Role{
+        Name:        createRoleRequest.Name,
+        Permissions: createRoleRequest.Permission,
+    }
 
-	// Create the role
-	role := models.Role{
-		Name:        createRoleRequest.Name,
-		Permissions: createRoleRequest.Permission,
-		Scopes:      scopePointers,
-	}
+    // Start a transaction to ensure atomicity
+    tx := database.DB.Begin()
 
-	if err := database.DB.Create(&role).Error; err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to create role")
-		return
-	}
+    // Create the role first
+    if err := tx.Create(&role).Error; err != nil {
+        tx.Rollback()
+        response.Error(c, http.StatusInternalServerError, "Failed to create role")
+        return
+    }
 
-	c.JSON(http.StatusCreated, role)
+    // If scopes are specified, attach them to the role
+    if len(createRoleRequest.ScopesIDs) > 0 {
+        var scopes []models.Scope
+        if err := tx.Where("id IN ?", createRoleRequest.ScopesIDs).Find(&scopes).Error; err != nil || len(scopes) != len(createRoleRequest.ScopesIDs) {
+            tx.Rollback()
+            response.Error(c, http.StatusBadRequest, "Invalid scope IDs")
+            return
+        }
+
+        // Associate scopes with the role
+        for i := range scopes {
+            if err := tx.Model(&role).Association("Scopes").Append(&scopes[i]); err != nil {
+                tx.Rollback()
+                response.Error(c, http.StatusInternalServerError, "Failed to associate scopes with role")
+                return
+            }
+        }
+    }
+
+    // Commit the transaction
+    if err := tx.Commit().Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Failed to commit transaction")
+        return
+    }
+
+    // Fetch the complete role with associations for response
+    if err := database.DB.Preload("Scopes").First(&role, role.ID).Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Failed to retrieve created role")
+        return
+    }
+
+    c.JSON(http.StatusCreated, role)
 }
 
 // GetAllRoles retrieves all roles
@@ -76,27 +98,28 @@ func CreateRole(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Success 200 {array} models.Role
+// @Failure 401 {object} map[string]string
 // @Router /roles [get]
 // @Security Bearer
 func GetAllRoles(c *gin.Context) {
-	user, err := middleware.GetUserFromRequest(c)
-	if err != nil {
-		return
-	}
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return
+    }
 
-	// Check permissions
-	if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
-		response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
-		return
-	}
+    // Check permissions
+    if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
+        response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
+        return
+    }
 
-	var roles []models.Role
-	if err := database.DB.Preload("Users").Preload("Scopes").Find(&roles).Error; err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to fetch roles")
-		return
-	}
-	
-	c.JSON(http.StatusOK, roles)
+    var roles []models.Role
+    if err := database.DB.Preload("Scopes").Find(&roles).Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Failed to fetch roles")
+        return
+    }
+    
+    c.JSON(http.StatusOK, roles)
 }
 
 // GetRoleByID retrieves a role by its ID
@@ -111,15 +134,26 @@ func GetAllRoles(c *gin.Context) {
 // @Router /roles/{role_id} [get]
 // @Security Bearer
 func GetRoleByID(c *gin.Context) {
-	roleID := c.Param("role_id")
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return
+    }
 
-	var role models.Role
-	if err := database.DB.Where("id = ?", roleID).Preload("Users").Preload("Scopes").First(&role).Error; err != nil {
-		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
-		return
-	}
+    // Check permissions
+    if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
+        response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
+        return
+    }
 
-	c.JSON(http.StatusOK, role)
+    roleID := c.Param("role_id")
+
+    var role models.Role
+    if err := database.DB.Where("id = ?", roleID).Preload("Users").Preload("Scopes").First(&role).Error; err != nil {
+        response.Error(c, http.StatusNotFound, ErrRoleNotFound)
+        return
+    }
+
+    c.JSON(http.StatusOK, role)
 }
 
 // UpdateRoleByID updates a role by its ID
@@ -129,108 +163,129 @@ func GetRoleByID(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param role_id path string true "Role ID"
-// @Param role body UpdateRoleRequest true "Role Update Data"
+// @Param role body RoleRequest true "Role Update Data"
 // @Success 200 {object} models.Role
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /roles/{role_id} [put]
 // @Security Bearer
 func UpdateRoleByID(c *gin.Context) {
-	user, err := middleware.GetUserFromRequest(c)
-	if err != nil {
-		return
-	}
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return
+    }
 
-	// Check permissions
-	if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
-		response.Error(c, http.StatusUnauthorized, ErrNoPermissionUpdate)
-		return
-	}
+    // Check permissions
+    if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
+        response.Error(c, http.StatusUnauthorized, ErrNoPermissionUpdate)
+        return
+    }
 
-	roleID := c.Param("role_id")
+    roleID := c.Param("role_id")
 
-	var role models.Role
-	if err := database.DB.Where("id = ?", roleID).Preload("Scopes").First(&role).Error; err != nil {
-		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
-		return
-	}
+    var role models.Role
+    if err := database.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
+        response.Error(c, http.StatusNotFound, ErrRoleNotFound)
+        return
+    }
 
-	// Parse the update request
-	var updateRequest UpdateRoleRequest
-	if err := c.ShouldBindJSON(&updateRequest); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
+    // Parse the update request
+    var updateRequest RoleRequest
+    if err := c.ShouldBindJSON(&updateRequest); err != nil {
+        response.Error(c, http.StatusBadRequest, err.Error())
+        return
+    }
 
-	// Update basic fields
-	role.Name = updateRequest.Name
-	role.Permissions = updateRequest.Permission
+    // Start a transaction
+    tx := database.DB.Begin()
 
-	// If scopes are specified, update the scopes relationship
-	if updateRequest.ScopesIds != nil {
-		// Clear existing associations
-		if err := database.DB.Model(&role).Association("Scopes").Clear(); err != nil {
-			response.Error(c, http.StatusInternalServerError, "Failed to clear existing scope associations")
-			return
-		}
+    // Update basic fields
+    if err := tx.Model(&role).Updates(models.Role{
+        Name:        updateRequest.Name,
+        Permissions: updateRequest.Permission,
+    }).Error; err != nil {
+        tx.Rollback()
+        response.Error(c, http.StatusInternalServerError, "Failed to update role")
+        return
+    }
 
-		// Add new scope associations if any scope IDs are provided
-		if len(updateRequest.ScopesIds) > 0 {
-			var scopes []models.Scope
-			if err := database.DB.Where("id IN (?)", updateRequest.ScopesIds).Find(&scopes).Error; err != nil {
-				response.Error(c, http.StatusBadRequest, "Invalid scope IDs")
-				return
-			}
+    // If scopes are specified, update the scopes relationship
+    if updateRequest.ScopesIDs != nil {
+        // Clear existing associations
+        if err := tx.Model(&role).Association("Scopes").Clear(); err != nil {
+            tx.Rollback()
+            response.Error(c, http.StatusInternalServerError, "Failed to clear existing scope associations")
+            return
+        }
 
-			var scopePointers []*models.Scope
-			for i := range scopes {
-				scopePointers = append(scopePointers, &scopes[i])
-			}
+        // Add new scope associations if any scope IDs are provided
+        if len(updateRequest.ScopesIDs) > 0 {
+            var scopes []models.Scope
+            if err := tx.Where("id IN ?", updateRequest.ScopesIDs).Find(&scopes).Error; err != nil {
+                tx.Rollback()
+                response.Error(c, http.StatusBadRequest, "Invalid scope IDs")
+                return
+            }
 
-			// Set the new scopes
-			role.Scopes = scopePointers
-		}
-	}
+            // Check if all requested scopes were found
+            if len(scopes) != len(updateRequest.ScopesIDs) {
+                tx.Rollback()
+                response.Error(c, http.StatusBadRequest, "One or more scope IDs are invalid")
+                return
+            }
 
-	// Save the updated role with its scope relationships
-	if err := database.DB.Save(&role).Error; err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to update role")
-		return
-	}
+            // Associate scopes with the role
+            for i := range scopes {
+                if err := tx.Model(&role).Association("Scopes").Append(&scopes[i]); err != nil {
+                    tx.Rollback()
+                    response.Error(c, http.StatusInternalServerError, "Failed to associate scopes with role")
+                    return
+                }
+            }
+        }
+    }
 
-	// Fetch the updated role with all its associations for the response
-	if err := database.DB.Preload("Users").Preload("Scopes").Where("id = ?", roleID).First(&role).Error; err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to fetch updated role")
-		return
-	}
+    // Commit the transaction
+    if err := tx.Commit().Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Failed to commit transaction")
+        return
+    }
 
-	c.JSON(http.StatusOK, role)
+    // Fetch the updated role with all its associations for the response
+    if err := database.DB.Preload("Users").Preload("Scopes").Where("id = ?", roleID).First(&role).Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Failed to fetch updated role")
+        return
+    }
+
+    c.JSON(http.StatusOK, role)
 }
 
 // DeleteRole deletes a role and its associations
-// @Summary delete a role
-// @Description delete a role and cascade first to roles_scopes and user_roles
+// @Summary Delete a role
+// @Description Delete a role and cascade first to roles_scopes and user_roles
 // @Tags Roles
 // @Accept json
 // @Produce json
 // @Param role_id path string true "Role ID"
-// @Success 200 {object} models.Role
+// @Success 204 "No Content"
+// @Failure 401 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /roles/{role_id} [delete]
 // @Security Bearer
 func DeleteRole(c *gin.Context) {
-	user, err := middleware.GetUserFromRequest(c)
-	if err != nil {
-		return
-	}
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return
+    }
 
-	// Check permissions
+    // Check permissions
     if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
         response.Error(c, http.StatusUnauthorized, ErrNoPermissionDelete)
         return
     }
 
-	roleID := c.Param("role_id")
+    roleID := c.Param("role_id")
 
     var role models.Role
     if err := database.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
@@ -268,5 +323,5 @@ func DeleteRole(c *gin.Context) {
         return
     }
 
-    c.JSON(http.StatusOK, role)
+    c.Status(http.StatusNoContent)
 }

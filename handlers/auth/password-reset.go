@@ -6,6 +6,7 @@ import (
 	"api/services"
 	"api/utils"
 	"api/utils/response"
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
@@ -15,13 +16,44 @@ import (
 	"gorm.io/gorm"
 )
 
-type RequestPasswordResetRequest struct {
-    Email string `json:"email" binding:"required,email"`
+// generateResetToken creates a secure random token for password reset
+func generateResetToken() (string, error) {
+    b := make([]byte, TokenBytes)
+    if _, err := rand.Read(b); err != nil {
+        return "", err
+    }
+    return hex.EncodeToString(b), nil
 }
 
-type ResetPasswordRequest struct {
-    Token    string `json:"token" binding:"required"`
-    Password string `json:"password" binding:"required,min=8"`
+// createResetEntry saves a new password reset token in the database using a transaction
+func createResetEntry(userID string, token string) error {
+    // Start a transaction
+    tx := database.DB.Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+        }
+    }()
+
+    // Delete any existing reset tokens for this user
+    if err := tx.Where("user_id = ?", userID).Delete(&models.PasswordReset{}).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    // Create new password reset entry with explicit expiration time
+    resetEntry := models.PasswordReset{
+        UserID:    userID,
+        Token:     token,
+        ExpiresAt: time.Now().Add(TokenExpiration),
+    }
+
+    if err := tx.Create(&resetEntry).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    return tx.Commit().Error
 }
 
 // RequestPasswordReset initiates the password reset process
@@ -35,56 +67,47 @@ type ResetPasswordRequest struct {
 // @Failure 400,404 {object} map[string]string
 // @Router /auth/request-reset [post]
 func RequestPasswordReset(c *gin.Context) {
-    var req RequestPasswordResetRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
+    ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+    defer cancel()
+
+    var resetRequest RequestPasswordResetRequest
+    if err := c.ShouldBindJSON(&resetRequest); err != nil {
         response.Error(c, http.StatusBadRequest, err.Error())
         return
     }
 
     var user models.User
-    if err := database.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+    if err := database.DB.WithContext(ctx).Where("email = ?", resetRequest.Email).First(&user).Error; err != nil {
         if err == gorm.ErrRecordNotFound {
             // Return success anyway to prevent email enumeration
-            c.JSON(http.StatusOK, gin.H{"message": "If the email exists, a reset link will be sent"})
+            c.JSON(http.StatusOK, gin.H{"message": ResetSuccessMsg})
             return
         }
-        response.Error(c, http.StatusInternalServerError, "Failed to process request")
+        response.Error(c, http.StatusInternalServerError, ErrUserNotFound)
         return
     }
 
     // Generate random token
-    b := make([]byte, 32)
-    if _, err := rand.Read(b); err != nil {
-        response.Error(c, http.StatusInternalServerError, "Failed to generate reset token")
-        return
-    }
-    token := hex.EncodeToString(b)
-
-    // Delete any existing reset tokens for this user
-    if err := database.DB.Where("user_id = ?", user.ID).Delete(&models.PasswordReset{}).Error; err != nil {
-        response.Error(c, http.StatusInternalServerError, "Failed to process request")
+    token, err := generateResetToken()
+    if err != nil {
+        response.Error(c, http.StatusInternalServerError, ErrTokenGenerateFailed)
         return
     }
 
-    // Create new password reset entry
-    resetEntry := models.PasswordReset{
-        UserID: user.ID,
-        Token:  token,
-    }
-
-    if err := database.DB.Create(&resetEntry).Error; err != nil {
-        response.Error(c, http.StatusInternalServerError, "Failed to create reset token")
+    // Create reset entry in database
+    if err := createResetEntry(user.ID, token); err != nil {
+        response.Error(c, http.StatusInternalServerError, ErrFailedRequest)
         return
     }
 
     // Send email
     emailService := services.NewEmailService()
     if err := emailService.SendPasswordResetEmail(user.Email, token); err != nil {
-        response.Error(c, http.StatusInternalServerError, "Failed to send reset email")
+        response.Error(c, http.StatusInternalServerError, ErrFailedRequest)
         return
     }
 
-    c.JSON(http.StatusOK, gin.H{"message": "If the email exists, a reset link will be sent"})
+    c.JSON(http.StatusOK, gin.H{"message": ResetSuccessMsg})
 }
 
 // ResetPassword handles the password reset
@@ -98,43 +121,72 @@ func RequestPasswordReset(c *gin.Context) {
 // @Failure 400,404 {object} map[string]string
 // @Router /auth/reset-password [post]
 func ResetPassword(c *gin.Context) {
-    var req ResetPasswordRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
+    ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+    defer cancel()
+
+    var resetRequest ResetPasswordRequest
+    if err := c.ShouldBindJSON(&resetRequest); err != nil {
         response.Error(c, http.StatusBadRequest, err.Error())
         return
     }
 
-    // Find reset entry
-    var resetEntry models.PasswordReset
-    if err := database.DB.Where("token = ?", req.Token).First(&resetEntry).Error; err != nil {
-        response.Error(c, http.StatusBadRequest, "Invalid or expired reset token")
+    // Validate password
+    if err := utils.ValidatePassword(resetRequest.Password); err != nil {
+        response.Error(c, http.StatusBadRequest, err.Error())
         return
     }
 
-    // Check if token is not older than 1 hour
-    createdAt := resetEntry.CreatedAt
-    if time.Since(createdAt) > time.Hour {
-        // Delete expired token
-        database.DB.Delete(&resetEntry)
+    // Start a transaction
+    tx := database.DB.WithContext(ctx).Begin()
+    defer func() {
+        if r := recover(); r != nil {
+            tx.Rollback()
+        }
+    }()
+
+    // Find reset entry
+    var resetEntry models.PasswordReset
+    if err := tx.Where("token = ?", resetRequest.Token).First(&resetEntry).Error; err != nil {
+        tx.Rollback()
+        response.Error(c, http.StatusBadRequest, ErrInvalidExpiredToken)
+        return
+    }
+
+    // Check if token is expired
+    if time.Now().After(resetEntry.ExpiresAt) {
+        tx.Delete(&resetEntry)
+        tx.Commit()
         response.Error(c, http.StatusBadRequest, "Reset token has expired")
         return
     }
 
     // Hash new password
-    hashedPassword, err := utils.HashPassword(req.Password)
+    hashedPassword, err := utils.HashPassword(resetRequest.Password)
     if err != nil {
-        response.Error(c, http.StatusInternalServerError, "Failed to process new password")
+        tx.Rollback()
+        response.Error(c, http.StatusInternalServerError, ErrHashPasswordFailed)
         return
     }
 
-    if err := database.DB.Model(&models.User{}).Where("id = ?", resetEntry.UserID).
+    // Update user password
+    if err := tx.Model(&models.User{}).Where("id = ?", resetEntry.UserID).
         Updates(models.User{Password: hashedPassword, HasDefaultPassword: false}).Error; err != nil {
+        tx.Rollback()
         response.Error(c, http.StatusInternalServerError, "Failed to update password")
         return
     }
 
     // Delete used reset token
-    database.DB.Delete(&resetEntry)
+    if err := tx.Delete(&resetEntry).Error; err != nil {
+        tx.Rollback()
+        response.Error(c, http.StatusInternalServerError, "Failed to complete password reset")
+        return
+    }
 
-    c.JSON(http.StatusOK, gin.H{"message": "Password has been reset successfully"})
+    if err := tx.Commit().Error; err != nil {
+        response.Error(c, http.StatusInternalServerError, "Failed to complete password reset")
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": ResetCompleteMsg})
 }

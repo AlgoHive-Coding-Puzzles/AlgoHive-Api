@@ -90,7 +90,7 @@ func AddGroupToCompetition(c *gin.Context) {
     }
 
     // Reload the competition with its associations
-    if err := tx.Preload("Catalog").Preload("Groups").First(&competition, competitionID).Error; err != nil {
+    if err := tx.Preload("Catalog").Preload("Groups").First(&competition, "id = ?", competitionID).Error; err != nil {
         tx.Rollback()
         log.Printf("Failed to reload competition %s: %v", competitionID, err)
         response.Error(c, http.StatusInternalServerError, "Failed to reload competition")
@@ -186,7 +186,7 @@ func RemoveGroupFromCompetition(c *gin.Context) {
     }
 
     // Reload the competition with its associations
-    if err := tx.Preload("Catalog").Preload("Groups").First(&competition, competitionID).Error; err != nil {
+    if err := tx.Preload("Catalog").Preload("Groups").First(&competition, "id = ?", competitionID).Error; err != nil {
         tx.Rollback()
         log.Printf("Failed to reload competition %s: %v", competitionID, err)
         response.Error(c, http.StatusInternalServerError, "Failed to reload competition")

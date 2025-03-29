@@ -6,6 +6,7 @@ import (
 	"api/models"
 	"api/utils/permissions"
 	"api/utils/response"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -64,7 +65,7 @@ func GetUserCompetitions(c *gin.Context) {
     }
 
     var user models.User
-    result := database.DB.Where("id = ?", userID).Preload("Roles").First(&user)
+    result := database.DB.Preload("Roles").First(&user, "id = ?", userID)
     if result.Error != nil {
         c.JSON(http.StatusOK, []models.Competition{})
 		return
@@ -125,7 +126,9 @@ func GetCompetition(c *gin.Context) {
 	competitionID := c.Param("id")
 	var competition models.Competition
 
-	if err := database.DB.Preload("Catalog").Preload("Groups").Where("id = ?", competitionID).First(&competition).Error; err != nil {
+	log.Printf("Fetching competition with ID: %s", competitionID)
+
+	if err := database.DB.Preload("Catalog").Preload("Groups").First(&competition, "id = ?", competitionID).Error; err != nil {
 		response.Error(c, http.StatusNotFound, ErrCompetitionNotFound)
 		return
 	}

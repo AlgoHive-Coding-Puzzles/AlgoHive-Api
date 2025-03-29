@@ -84,8 +84,12 @@ func TriggerPuzzleFirstTry(competition models.Competition, puzzleID string, puzz
         return models.Try{}, fmt.Errorf("failed to commit transaction: %w", err)
     }
 
-    // Associate user after transaction is committed
-    newTry.User = &user
+    // Get user but with group association
+    var userWithGroup models.User
+    if err := database.DB.Preload("Groups").Where("id = ?", user.ID).First(&userWithGroup).Error; err != nil {
+        return models.Try{}, fmt.Errorf("failed to fetch user: %w", err)
+    }
+    newTry.User = &userWithGroup
 
     // Broadcast after successful DB transaction
     realtime.BroadcastTryUpdate(realtime.TryUpdate{
@@ -156,7 +160,13 @@ func UpdateTry(competition models.Competition, puzzleID string, puzzleIndex int,
         return models.Try{}, fmt.Errorf("failed to commit transaction: %w", err)
     }
 
-    existingTry.User = &user
+    // Get user but with group association
+    var userWithGroup models.User
+    if err := database.DB.Preload("Groups").Where("id = ?", user.ID).First(&userWithGroup).Error; err != nil {
+        return models.Try{}, fmt.Errorf("failed to fetch user: %w", err)
+    }
+
+    existingTry.User = &userWithGroup
 
     // Broadcast after successful DB transaction
     realtime.BroadcastTryUpdate(realtime.TryUpdate{
@@ -234,8 +244,14 @@ func EndTry(competition models.Competition, puzzleID string, puzzleIndex int, st
         return models.Try{}, fmt.Errorf("failed to commit transaction: %w", err)
     }
 
+    // Get user but with group association
+    var userWithGroup models.User
+    if err := database.DB.Preload("Groups").Where("id = ?", user.ID).First(&userWithGroup).Error; err != nil {
+        return models.Try{}, fmt.Errorf("failed to fetch user: %w", err)
+    }
+
     // Associate user after transaction commit
-    existingTry.User = &user
+    existingTry.User = &userWithGroup
 
     // Broadcast completed try
     realtime.BroadcastTryUpdate(realtime.TryUpdate{

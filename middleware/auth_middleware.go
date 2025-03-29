@@ -104,6 +104,29 @@ func AuthMiddleware() gin.HandlerFunc {
     }
 }
 
+func AddKeyMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        // Get the token from the request
+        token, err := getTokenFromRequest(c)
+        if err != nil {
+            c.Next()
+            return
+        }
+        
+        // Validate the token
+        claims, err := utils.ValidateToken(token)
+        if err != nil {
+            c.Next()
+            return
+        }
+        
+        // Set user data in context
+        c.Set(ContextKeyUserID, claims.UserID)
+        
+        c.Next()
+    }
+}
+
 // OptionalAuthMiddleware sets the user ID in context if authenticated, otherwise sets to empty string
 func OptionalAuthMiddleware() gin.HandlerFunc {
     return func(c *gin.Context) {

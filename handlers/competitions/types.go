@@ -28,7 +28,7 @@ const (
 
 type UserStat struct {
 	UserID             string  `gorm:"column:user_id"`
-	Firstname          string  `gorm:"column:firstname"`
+	Firstname          string  `gorm:"column:first_name"`
 	TotalScore         float64 `gorm:"column:total_score"`
 	HighestPuzzleIndex int     `gorm:"column:highest_puzzle_index"`
 	TotalAttempts      int     `gorm:"column:total_attempts"`

@@ -84,8 +84,8 @@ func ExportCompetitionDataExcel(c *gin.Context) {
 
     // Add Logs sheet with detailed competition data
     type LogEntry struct {
-        Firstname    string  `gorm:"column:firstname"`
-        Lastname     string  `gorm:"column:lastname"`
+        Firstname    string  `gorm:"column:first_name"`
+        Lastname     string  `gorm:"column:last_name"`
         Groups       string  `gorm:"column:groups"`
         PuzzleIndex  int     `gorm:"column:puzzle_index"`
         PuzzleLvl    string  `gorm:"column:puzzle_lvl"`
@@ -348,6 +348,62 @@ func GetCompetitionTries(c *gin.Context) {
         }
     }
 
+    c.JSON(http.StatusOK, tries)
+}
+
+// GetCompetitionTriesLdb retrieves all tries for a competition ready for leaderboard (removing any answers)
+// @Summary Get all tries for a competition ready for leaderboard
+// @Description Get all tries for the specified competition ready for leaderboard (removing any answers)
+// @Tags Competitions
+// @Accept json
+// @Produce json
+// @Param id path string true "Competition ID"
+// @Success 200 {array} models.Try
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /competitions/{id}/tries/ldb [get]
+// @Security Bearer
+func GetCompetitionTriesLDB(c *gin.Context) {
+    ctx, cancel := context.WithTimeout(c.Request.Context(), TriesOperationTimeout)
+    defer cancel()
+    
+    user, err := middleware.GetUserFromRequest(c)
+    if err != nil {
+        return
+    }
+
+    competitionID := c.Param("id")
+    if competitionID == "" {
+        response.Error(c, http.StatusBadRequest, "Invalid competition ID")
+        return
+    }
+    
+    // Check if user has access to the competition
+    var competition models.Competition
+    var tries []models.Try
+
+    err = services.GetAccessibleCompetition(user.ID, competitionID, &competition)
+    if err != nil {
+        response.Error(c, http.StatusUnauthorized, ErrUnauthorizedAccess)
+        return
+    }
+
+    // Execute the database query based on permissions
+    if err := database.DB.WithContext(ctx).
+        Where("competition_id = ?", competitionID).
+        Preload("User.Groups").
+        Find(&tries).Error; err != nil {
+        log.Printf("Failed to fetch competition tries: %v", err)
+        response.Error(c, http.StatusInternalServerError, ErrFailedFetchCompetitionTries)
+        return
+    }
+
+    // Remove answers from tries for leaderboard
+    emptyString := ""
+    for i := range tries {
+        tries[i].LastAnswer = &emptyString
+    }
+    
     c.JSON(http.StatusOK, tries)
 }
 

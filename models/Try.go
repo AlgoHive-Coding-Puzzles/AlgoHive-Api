@@ -3,12 +3,12 @@ package models
 // Try represents a user's attempt at solving a puzzle in a competition
 type Try struct {
     ID            string        `gorm:"type:uuid;default:gen_random_uuid();primary_key" json:"id"`
-    UserID        string        `gorm:"type:uuid;not null;column:user_id" json:"user_id"`
-    CompetitionID string        `gorm:"type:uuid;not null;column:competition_id" json:"competition_id"`
-    PuzzleID      string        `gorm:"type:varchar(255);not null;column:puzzle_id" json:"puzzle_id"`
-    PuzzleIndex   int           `gorm:"type:integer;not null;column:puzzle_index" json:"puzzle_index"`
+    UserID        string        `gorm:"type:uuid;not null;column:user_id;uniqueIndex:unique_try" json:"user_id"`
+    CompetitionID string        `gorm:"type:uuid;not null;column:competition_id;uniqueIndex:unique_try" json:"competition_id"`
+    PuzzleID      string        `gorm:"type:varchar(255);not null;column:puzzle_id;uniqueIndex:unique_try" json:"puzzle_id"`
+    PuzzleIndex   int           `gorm:"type:integer;not null;column:puzzle_index;uniqueIndex:unique_try" json:"puzzle_index"`
     PuzzleLvl     string        `gorm:"type:varchar(255);not null;column:puzzle_lvl" json:"puzzle_lvl"`
-    Step          int           `gorm:"type:integer;not null" json:"step"`
+    Step          int           `gorm:"type:integer;not null;uniqueIndex:unique_try" json:"step"`
     StartTime     string      `gorm:"type:timestamp;not null;column:start_time" json:"start_time"`
     EndTime       *string     `gorm:"type:timestamp;column:end_time" json:"end_time"`
     Attempts      int         `gorm:"type:integer;not null" json:"attempts"`

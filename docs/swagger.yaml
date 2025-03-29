@@ -459,22 +459,22 @@ definitions:
     properties:
       email:
         type: string
-      firstname:
+      first_name:
         type: string
       groups:
         items:
           type: string
         type: array
-      lastname:
+      last_name:
         type: string
     type: object
   users.UserWithRoles:
     properties:
       email:
         type: string
-      firstname:
+      first_name:
         type: string
-      lastname:
+      last_name:
         type: string
       roles:
         items:
@@ -1413,6 +1413,44 @@ paths:
       security:
       - Bearer: []
       summary: Get all tries for a competition
+      tags:
+      - Competitions
+  /competitions/{id}/tries/ldb:
+    get:
+      consumes:
+      - application/json
+      description: Get all tries for the specified competition ready for leaderboard
+        (removing any answers)
+      parameters:
+      - description: Competition ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Try'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all tries for a competition ready for leaderboard
       tags:
       - Competitions
   /competitions/{id}/users/{user_id}/tries:

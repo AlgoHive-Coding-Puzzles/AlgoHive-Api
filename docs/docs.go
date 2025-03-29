@@ -1606,6 +1606,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/competitions/{id}/tries/ldb": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get all tries for the specified competition ready for leaderboard (removing any answers)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Competitions"
+                ],
+                "summary": "Get all tries for a competition ready for leaderboard",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Competition ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Try"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/competitions/{id}/users/{user_id}/tries": {
             "get": {
                 "security": [
@@ -5047,7 +5105,7 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "firstname": {
+                "first_name": {
                     "type": "string"
                 },
                 "groups": {
@@ -5056,7 +5114,7 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "lastname": {
+                "last_name": {
                     "type": "string"
                 }
             }
@@ -5067,10 +5125,10 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "firstname": {
+                "first_name": {
                     "type": "string"
                 },
-                "lastname": {
+                "last_name": {
                     "type": "string"
                 },
                 "roles": {

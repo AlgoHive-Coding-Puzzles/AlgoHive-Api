@@ -29,16 +29,16 @@ const (
 
 // UserWithRoles represents a user with associated roles for API requests
 type UserWithRoles struct {
-	FirstName string   `json:"firstname"`
-	LastName  string   `json:"lastname"`
+	FirstName string   `json:"first_name"`
+	LastName  string   `json:"last_name"`
 	Email     string   `json:"email"`
 	Roles     []string `json:"roles"`
 }
 
 // UserWithGroup represents a user with associated groups for API requests
 type UserWithGroup struct {
-	FirstName string   `json:"firstname"`
-	LastName  string   `json:"lastname"`
+	FirstName string   `json:"first_name"`
+	LastName  string   `json:"last_name"`
 	Email     string   `json:"email"`
 	Group     []string `json:"groups"`
 }

@@ -329,7 +329,7 @@ func GetTriesFromCompetitonPuzzle(c *gin.Context) {
     if err := database.DB.WithContext(ctx).
         Where("competition_id = ? AND user_id = ? AND puzzle_id = ? AND puzzle_index = ?",
         competitionID, user.ID, puzzleID, puzzleIndex).
-        Order("created_at ASC").
+        Order("start_time ASC").
         Find(&tries).Error; err != nil {
         log.Printf("Failed to fetch tries: %v", err)
         response.Error(c, http.StatusInternalServerError, "Failed to fetch tries")

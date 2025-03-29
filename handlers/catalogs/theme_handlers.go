@@ -86,7 +86,7 @@ func GetThemesFromCatalog(c *gin.Context) {
     defer resp.Body.Close()
 
     if resp.StatusCode != http.StatusOK {
-        log.Printf("API returned non-200 status: %d %s", resp.StatusCode, resp.Status)
+        log.Printf("API returned non-200 status: %d", resp.StatusCode)
         response.Error(c, resp.StatusCode, ErrAPIReachFailed)
         return
     }
@@ -185,7 +185,7 @@ func GetThemeDetailsFromCatalog(c *gin.Context) {
     defer resp.Body.Close()
 
     if resp.StatusCode != http.StatusOK {
-        log.Printf("API returned non-200 status: %d %s", resp.StatusCode, resp.Status)
+        log.Printf("API returned non-200 status: %d", resp.StatusCode)
         response.Error(c, resp.StatusCode, ErrAPIReachFailed)
         return
     }

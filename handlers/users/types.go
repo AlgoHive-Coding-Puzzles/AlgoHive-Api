@@ -1,5 +1,7 @@
 package users
 
+import "api/models"
+
 // Error messages constants
 const (
 	ErrNotFound               = "User not found"
@@ -47,6 +49,13 @@ type UserWithGroup struct {
 type UserIdWithRoles struct {
 	UserId string   `json:"user_id"`
 	Roles  []string `json:"roles"`
+}
+
+// Create new type for the user update request
+type UserProfileUpdate struct {
+    User      models.User `json:"user"`
+    RoleIDs   []string    `json:"roles_ids"`
+    GroupIDs  []string    `json:"groups_ids"`
 }
 
 

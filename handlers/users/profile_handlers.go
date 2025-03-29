@@ -119,7 +119,7 @@ func UpdateUserProfile(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param userId path string true "User ID"
-// @Param user body models.User true "User Profile"
+// @Param user body UserProfileUpdate true "User Profile Update with optional roles and groups"
 // @Success 200 {object} models.User
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
@@ -159,11 +159,13 @@ func UpdateTargetUserProfile(c *gin.Context) {
         return
     }
     
-    var userUpdate models.User
-    if err := c.ShouldBindJSON(&userUpdate); err != nil {
+    var profileUpdate UserProfileUpdate
+    if err := c.ShouldBindJSON(&profileUpdate); err != nil {
         response.Error(c, http.StatusBadRequest, err.Error())
         return
     }
+    
+    userUpdate := profileUpdate.User
     
     // Input validation
     if userUpdate.Email == "" || userUpdate.Firstname == "" || userUpdate.Lastname == "" {
@@ -192,13 +194,77 @@ func UpdateTargetUserProfile(c *gin.Context) {
         return
     }
     
+    // Update roles if provided
+    if len(profileUpdate.RoleIDs) > 0 {
+        // Check if the provided role IDs exist
+        var roles []*models.Role
+        if err := tx.Where("id IN ?", profileUpdate.RoleIDs).Find(&roles).Error; err != nil {
+            tx.Rollback()
+            response.Error(c, http.StatusInternalServerError, "Failed to find roles")
+            return
+        }
+        
+        // Check if all provided role IDs exist
+        if len(roles) != len(profileUpdate.RoleIDs) {
+            tx.Rollback()
+            response.Error(c, http.StatusBadRequest, ErrRoleNotFound)
+            return
+        }
+        
+        // First, clear existing associations
+        if err := tx.Model(&targetUser).Association("Roles").Clear(); err != nil {
+            tx.Rollback()
+            response.Error(c, http.StatusInternalServerError, ErrFailedAssociationRoles)
+            return
+        }
+        
+        // Set new associations
+        if err := tx.Model(&targetUser).Association("Roles").Replace(roles); err != nil {
+            tx.Rollback()
+            response.Error(c, http.StatusInternalServerError, "Failed to update user roles")
+            return
+        }
+    }
+    
+    // Update groups if provided
+    if len(profileUpdate.GroupIDs) > 0 {
+        // Check if the provided group IDs exist
+        var groups []*models.Group
+        if err := tx.Where("id IN ?", profileUpdate.GroupIDs).Find(&groups).Error; err != nil {
+            tx.Rollback()
+            response.Error(c, http.StatusInternalServerError, "Failed to find groups")
+            return
+        }
+        
+        // Check if all provided group IDs exist
+        if len(groups) != len(profileUpdate.GroupIDs) {
+            tx.Rollback()
+            response.Error(c, http.StatusBadRequest, ErrGroupNotFound)
+            return
+        }
+        
+        // First, clear existing associations
+        if err := tx.Model(&targetUser).Association("Groups").Clear(); err != nil {
+            tx.Rollback()
+            response.Error(c, http.StatusInternalServerError, ErrFailedAssociationGroups)
+            return
+        }
+        
+        // Set new associations
+        if err := tx.Model(&targetUser).Association("Groups").Replace(groups); err != nil {
+            tx.Rollback()
+            response.Error(c, http.StatusInternalServerError, "Failed to update user groups")
+            return
+        }
+    }
+    
     if err := tx.Commit().Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Failed to commit transaction")
         return
     }
     
-    // Retrieve the updated user to return
-    if err := database.DB.Where("id = ?", userId).First(&targetUser).Error; err != nil {
+    // Retrieve the updated user to return with associations
+    if err := database.DB.Preload("Roles").Preload("Groups").Where("id = ?", userId).First(&targetUser).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Profile updated but failed to retrieve updated data")
         return
     }

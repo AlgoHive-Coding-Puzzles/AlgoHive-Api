@@ -4282,12 +4282,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "User Profile",
+                        "description": "User Profile Update with optional roles and groups",
                         "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/users.UserProfileUpdate"
                         }
                     }
                 ],
@@ -5096,6 +5096,26 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "users.UserProfileUpdate": {
+            "type": "object",
+            "properties": {
+                "groups_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "roles_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user": {
+                    "$ref": "#/definitions/models.User"
                 }
             }
         },

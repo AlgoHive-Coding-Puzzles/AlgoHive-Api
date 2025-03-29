@@ -5,6 +5,7 @@ import (
 	"api/middleware"
 	"api/models"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 	"strings"
 
@@ -30,39 +31,39 @@ func CreateUserAndAttachRoles(c *gin.Context) {
 
 	// Check permissions
 	if !permissions.RolesHavePermission(user.Roles, permissions.ROLES) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionRoles)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionRoles)
 		return
 	}
 
 	var userWithRoles UserWithRoles
 	if err := c.ShouldBindJSON(&userWithRoles); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// Check that the roles exist
 	var roles []models.Role
 	if err := database.DB.Where("id IN (?)", userWithRoles.Roles).Find(&roles).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrRoleNotFound)
+		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
 		return
 	}
 	
 	if len(roles) == 0 {
-		respondWithError(c, http.StatusNotFound, ErrRoleNotFound)
+		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
 		return
 	}
 
 	// Create the user
 	targetUser, err := createUser(userWithRoles.FirstName, userWithRoles.LastName, userWithRoles.Email)
 	if err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedToHashPassword)
+		response.Error(c, http.StatusInternalServerError, ErrFailedToHashPassword)
 		return
 	}
 
 	// Attach roles to the user
 	for i := range roles {
 		if err := database.DB.Model(targetUser).Association("Roles").Append(&roles[i]); err != nil {
-			respondWithError(c, http.StatusInternalServerError, "Failed to attach role to user")
+			response.Error(c, http.StatusInternalServerError, "Failed to attach role to user")
 			return
 		}
 	}
@@ -86,7 +87,7 @@ func GetUsersFromRoles(c *gin.Context) {
 
 	// Check permissions
 	if !permissions.IsStaff(user) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionUsersRoles)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionUsersRoles)
 		return
 	}
 
@@ -103,14 +104,14 @@ func GetUsersFromRoles(c *gin.Context) {
 
     // Ensure that at least one role is provided
     if len(roles) == 0 {
-        respondWithError(c, http.StatusBadRequest, ErrRolesRequired)
+        response.Error(c, http.StatusBadRequest, ErrRolesRequired)
         return
     }
 
     // Retrieve users accessible via these roles
 	users, err := getUsersFromRoleIDs(roles)
 	if err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedToGetUsers)
+		response.Error(c, http.StatusInternalServerError, ErrFailedToGetUsers)
 		return
 	}
 
@@ -165,40 +166,40 @@ func UpdateUserRoles(c *gin.Context) {
 
 	// Check permissions
 	if !permissions.IsStaff(user) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionUsersRoles)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionUsersRoles)
 		return
 	}
 
 	var userIdWithRoles UserIdWithRoles
 	if err := c.ShouldBindJSON(&userIdWithRoles); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	
 	var targetUser models.User
 	if err := database.DB.Where("id = ?", userIdWithRoles.UserId).Preload("Roles").First(&targetUser).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrUserNotFound)
+		response.Error(c, http.StatusNotFound, ErrUserNotFound)
 		return
 	}
 	// Check that the roles exist
 	var roles []models.Role
 	if err := database.DB.Where("id IN (?)", userIdWithRoles.Roles).Find(&roles).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrRoleNotFound)
+		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
 		return
 	}
 	if len(roles) == 0 {
-		respondWithError(c, http.StatusNotFound, ErrRoleNotFound)
+		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
 		return
 	}
 	// Remove existing associations
 	if err := database.DB.Model(&targetUser).Association("Roles").Clear(); err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to clear user roles")
+		response.Error(c, http.StatusInternalServerError, "Failed to clear user roles")
 		return
 	}
 	// Attach new roles to the user
 	for i := range roles {
 		if err := database.DB.Model(&targetUser).Association("Roles").Append(&roles[i]); err != nil {
-			respondWithError(c, http.StatusInternalServerError, "Failed to attach role to user")
+			response.Error(c, http.StatusInternalServerError, "Failed to attach role to user")
 			return
 		}
 	}

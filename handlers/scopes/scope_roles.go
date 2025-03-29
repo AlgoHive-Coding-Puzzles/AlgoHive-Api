@@ -5,6 +5,7 @@ import (
 	"api/middleware"
 	"api/models"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 	"strings"
 
@@ -31,26 +32,26 @@ func AttachScopeToRole(c *gin.Context) {
 	}
 
 	if !permissions.RolesHavePermission(user.Roles, permissions.SCOPES) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionAttach)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionAttach)
 		return
 	}
 
 	scopeID := c.Param("scope_id")
 	var scope models.Scope
 	if err := database.DB.Where("id = ?", scopeID).First(&scope).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrScopeNotFound)
+		response.Error(c, http.StatusNotFound, ErrScopeNotFound)
 		return
 	}
 
 	roleID := c.Param("role_id")
 	var role models.Role
 	if err := database.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrRoleNotFound)
+		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
 		return
 	}
 
 	if err := database.DB.Model(&scope).Association("Roles").Append(&role); err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedAttachRole+err.Error())
+		response.Error(c, http.StatusInternalServerError, ErrFailedAttachRole+err.Error())
 		return
 	}
 
@@ -77,26 +78,26 @@ func DetachScopeFromRole(c *gin.Context) {
 	}
 
 	if !permissions.RolesHavePermission(user.Roles, permissions.SCOPES) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionDetach)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionDetach)
 		return
 	}
 
 	scopeID := c.Param("scope_id")
 	var scope models.Scope
 	if err := database.DB.Where("id = ?", scopeID).First(&scope).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrScopeNotFound)
+		response.Error(c, http.StatusNotFound, ErrScopeNotFound)
 		return
 	}
 
 	roleID := c.Param("role_id")
 	var role models.Role
 	if err := database.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrRoleNotFound)
+		response.Error(c, http.StatusNotFound, ErrRoleNotFound)
 		return
 	}
 
 	if err := database.DB.Model(&scope).Association("Roles").Delete(&role); err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedDetachRole+err.Error())
+		response.Error(c, http.StatusInternalServerError, ErrFailedDetachRole+err.Error())
 		return
 	}
 
@@ -122,7 +123,7 @@ func GetRoleScopes(c *gin.Context) {
 	}
 
 	if !permissions.IsStaff(user) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
 		return
 	}
 
@@ -138,14 +139,14 @@ func GetRoleScopes(c *gin.Context) {
 	}
 
 	if len(roles) == 0 {
-		respondWithError(c, http.StatusBadRequest, ErrRolesRequired)
+		response.Error(c, http.StatusBadRequest, ErrRolesRequired)
 		return
 	}
 
 	// Load roles to check permissions
 	var loadedRoles []*models.Role
 	if err := database.DB.Where("id IN ?", roles).Find(&loadedRoles).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to get roles")
+		response.Error(c, http.StatusInternalServerError, "Failed to get roles")
 		return
 	}
 
@@ -153,7 +154,7 @@ func GetRoleScopes(c *gin.Context) {
 	if permissions.RolesHavePermission(loadedRoles, permissions.OWNER) {
 		var scopes []models.Scope
 		if err := database.DB.Preload("Groups").Find(&scopes).Error; err != nil {
-			respondWithError(c, http.StatusInternalServerError, ErrFailedGetScopes)
+			response.Error(c, http.StatusInternalServerError, ErrFailedGetScopes)
 			return
 		}
 
@@ -170,14 +171,14 @@ func GetRoleScopes(c *gin.Context) {
 			JOIN roles r ON rs.role_id = r.id
 			WHERE r.id IN ?
 	`, roles).Pluck("id", &scopesIDs).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedGetScopes)
+		response.Error(c, http.StatusInternalServerError, ErrFailedGetScopes)
 		return
 	}
 
 	var scopes []models.Scope
 	if len(scopesIDs) > 0 {
 		if err := database.DB.Preload("Groups").Where("id IN ?", scopesIDs).Find(&scopes).Error; err != nil {
-			respondWithError(c, http.StatusInternalServerError, ErrFailedGetScopes)
+			response.Error(c, http.StatusInternalServerError, ErrFailedGetScopes)
 			return
 		}
 	}

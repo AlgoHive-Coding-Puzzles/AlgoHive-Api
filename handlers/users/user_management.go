@@ -6,6 +6,7 @@ import (
 	"api/models"
 	"api/utils"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -53,20 +54,20 @@ func GetUsers(c *gin.Context) {
 	// Owners can see all users
 	if permissions.RolesHavePermission(user.Roles, permissions.OWNER) {
 		if err := database.DB.Preload("Roles").Preload("Groups").Find(&users).Error; err != nil {
-			respondWithError(c, http.StatusInternalServerError, ErrFailedToGetUsers)
+			response.Error(c, http.StatusInternalServerError, ErrFailedToGetUsers)
 			return
 		}
 	} else {
 			// For users without roles, only those in the same groups
 		if len(user.Roles) == 0 {
 			if err := getUsersInSameGroups(user.ID, &users); err != nil {
-				respondWithError(c, http.StatusInternalServerError, ErrFailedToGetUsers)
+				response.Error(c, http.StatusInternalServerError, ErrFailedToGetUsers)
 				return
 			}
 		} else {
 				// For users with roles, use the role->scope->group hierarchy
 			if err := getUsersFromRoleScopes(user.ID, &users); err != nil {
-				respondWithError(c, http.StatusInternalServerError, ErrFailedToGetUsers)
+				response.Error(c, http.StatusInternalServerError, ErrFailedToGetUsers)
 				return
 			}
 		}
@@ -142,13 +143,13 @@ func DeleteUser(c *gin.Context) {
     
     // Check if target user exists
     if err := database.DB.Where("id = ?", userID).First(&targetUser).Error; err != nil {
-        respondWithError(c, http.StatusNotFound, ErrNotFound)
+        response.Error(c, http.StatusNotFound, ErrNotFound)
         return
     }
 
     // Check permissions
     if !HasPermissionForUser(user, targetUser.ID, permissions.OWNER) {
-        respondWithError(c, http.StatusUnauthorized, ErrNoPermissionDelete)
+        response.Error(c, http.StatusUnauthorized, ErrNoPermissionDelete)
         return
     }
 
@@ -158,20 +159,20 @@ func DeleteUser(c *gin.Context) {
     // Delete associations first
     if err := tx.Model(&targetUser).Association("Roles").Clear(); err != nil {
         tx.Rollback()
-        respondWithError(c, http.StatusInternalServerError, ErrFailedAssociationRoles)
+        response.Error(c, http.StatusInternalServerError, ErrFailedAssociationRoles)
         return
     }
     
     if err := tx.Model(&targetUser).Association("Groups").Clear(); err != nil {
         tx.Rollback()
-        respondWithError(c, http.StatusInternalServerError, ErrFailedAssociationGroups)
+        response.Error(c, http.StatusInternalServerError, ErrFailedAssociationGroups)
         return
     }
 
     // Delete the user
     if err := tx.Delete(&targetUser).Error; err != nil {
         tx.Rollback()
-        respondWithError(c, http.StatusInternalServerError, ErrFailedToDeleteUser)
+        response.Error(c, http.StatusInternalServerError, ErrFailedToDeleteUser)
         return
     }
 
@@ -195,11 +196,11 @@ func BulkDeleteUsers(c *gin.Context) {
 	// Do it the most efficient way possible
 	var userIDs []string
 	if err := c.ShouldBindJSON(&userIDs); err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrInvalidUserIDs)
+		response.Error(c, http.StatusBadRequest, ErrInvalidUserIDs)
 		return
 	}
 	if len(userIDs) == 0 {
-		respondWithError(c, http.StatusBadRequest, ErrEmptyUserIDs)
+		response.Error(c, http.StatusBadRequest, ErrEmptyUserIDs)
 		return
 	}
 	user, err := middleware.GetUserFromRequest(c)
@@ -208,16 +209,16 @@ func BulkDeleteUsers(c *gin.Context) {
 	}
 	var users []models.User
 	if err := database.DB.Where("id IN ?", userIDs).Find(&users).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedToGetUsers)
+		response.Error(c, http.StatusInternalServerError, ErrFailedToGetUsers)
 		return
 	}
 	if len(users) == 0 {
-		respondWithError(c, http.StatusNotFound, ErrNotFound)
+		response.Error(c, http.StatusNotFound, ErrNotFound)
 		return
 	}
 	// Check permissions
 	if !HasPermissionForUser(user, users[0].ID, permissions.OWNER) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionDelete)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionDelete)
 		return
 	}
 	// Start a transaction to ensure atomicity of operations
@@ -226,19 +227,19 @@ func BulkDeleteUsers(c *gin.Context) {
 	for _, user := range users {
 		if err := tx.Model(&user).Association("Roles").Clear(); err != nil {
 			tx.Rollback()
-			respondWithError(c, http.StatusInternalServerError, ErrFailedAssociationRoles)
+			response.Error(c, http.StatusInternalServerError, ErrFailedAssociationRoles)
 			return
 		}
 		if err := tx.Model(&user).Association("Groups").Clear(); err != nil {
 			tx.Rollback()
-			respondWithError(c, http.StatusInternalServerError, ErrFailedAssociationGroups)
+			response.Error(c, http.StatusInternalServerError, ErrFailedAssociationGroups)
 			return
 		}
 	}
 	// Delete the users
 	if err := tx.Where("id IN ?", userIDs).Delete(&models.User{}).Error; err != nil {
 		tx.Rollback()
-		respondWithError(c, http.StatusInternalServerError, ErrFailedToDeleteUsers)
+		response.Error(c, http.StatusInternalServerError, ErrFailedToDeleteUsers)
 		return
 	}
 	// Commit the transaction
@@ -267,20 +268,20 @@ func ToggleBlockUser(c *gin.Context) {
 	
 	// Check if target user exists
 	if err := database.DB.Where("id = ?", userID).First(&targetUser).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrNotFound)
+		response.Error(c, http.StatusNotFound, ErrNotFound)
 		return
 	}
 
 	// Check permissions
 	if !HasPermissionForUser(user, targetUser.ID, permissions.OWNER) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionBlock)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionBlock)
 		return
 	}
 
 	// Toggle block status
 	targetUser.Blocked = !targetUser.Blocked
 	if err := database.DB.Save(&targetUser).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to update user")
+		response.Error(c, http.StatusInternalServerError, "Failed to update user")
 		return
 	}
 

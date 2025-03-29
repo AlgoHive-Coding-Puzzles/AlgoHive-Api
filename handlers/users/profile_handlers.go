@@ -7,6 +7,7 @@ import (
 	"api/models"
 	"api/utils"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -52,7 +53,7 @@ func UpdateUserProfile(c *gin.Context) {
 	
 	var userUpdate models.User
 	if err := c.ShouldBindJSON(&userUpdate); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	
@@ -62,7 +63,7 @@ func UpdateUserProfile(c *gin.Context) {
 	user.Lastname = userUpdate.Lastname
 	
 	if err := database.DB.Save(&user).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to update profile")
+		response.Error(c, http.StatusInternalServerError, "Failed to update profile")
 		return
 	}
 	
@@ -91,32 +92,32 @@ func UpdateTargetUserProfile(c *gin.Context) {
 	// Get the target user ID from the URL parameter
 	userId := c.Param("id")
 	if userId == "" {
-		respondWithError(c, http.StatusBadRequest, "User ID is required")
+		response.Error(c, http.StatusBadRequest, "User ID is required")
 		return
 	}
 	
 	// Find the target user by ID
 	var userUpdate models.User
 	if err := database.DB.Where("id = ?", userId).First(&userUpdate).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, "User not found")
+		response.Error(c, http.StatusNotFound, "User not found")
 		return
 	}
 
 	// Check if the authenticated user has permission to update the target user's profile
 	if !HasPermissionForUser(user, userUpdate.ID, permissions.GROUPS) && !HasPermissionForUser(user, userUpdate.ID, permissions.OWNER) {
-		respondWithError(c, http.StatusForbidden, "You do not have permission to update this user's profile")
+		response.Error(c, http.StatusForbidden, "You do not have permission to update this user's profile")
 		return
 	}
 	
 	if err := c.ShouldBindJSON(&userUpdate); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	
 	userUpdate.ID = userId
 	
 	if err := database.DB.Save(&userUpdate).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to update profile")
+		response.Error(c, http.StatusInternalServerError, "Failed to update profile")
 		return
 	}
 	
@@ -144,19 +145,19 @@ func ResetUserPassword(c *gin.Context) {
 	// Get the target user ID from the URL parameter
 	userId := c.Param("id")
 	if userId == "" {
-		respondWithError(c, http.StatusBadRequest, "User ID is required")
+		response.Error(c, http.StatusBadRequest, "User ID is required")
 		return
 	}
 	// Find the target user by ID
 	var userUpdate models.User
 	if err := database.DB.Where("id = ?", userId).First(&userUpdate).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, "User not found")
+		response.Error(c, http.StatusNotFound, "User not found")
 		return
 	}
 
 	// Check if the authenticated user has permission to reset the target user's password
 	if !HasPermissionForUser(user, userUpdate.ID, permissions.GROUPS) {
-		respondWithError(c, http.StatusForbidden, "You do not have permission to reset this user's password")
+		response.Error(c, http.StatusForbidden, "You do not have permission to reset this user's password")
 		return
 	}
 	
@@ -168,7 +169,7 @@ func ResetUserPassword(c *gin.Context) {
 
 	password, err = utils.HashPassword(password)
 	if err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to hash password")
+		response.Error(c, http.StatusInternalServerError, "Failed to hash password")
 		return
 	}
 
@@ -176,7 +177,7 @@ func ResetUserPassword(c *gin.Context) {
 	userUpdate.HasDefaultPassword = true
 	
 	if err := database.DB.Save(&userUpdate).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to update profile")
+		response.Error(c, http.StatusInternalServerError, "Failed to update profile")
 		return
 	}
 	
@@ -203,18 +204,18 @@ func UpdateUserPassword(c *gin.Context) {
 	
 	var passwordUpdate PasswordUpdate
 	if err := c.ShouldBindJSON(&passwordUpdate); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	
 	if !utils.CheckPasswordHash(passwordUpdate.OldPassword, user.Password) {
-		respondWithError(c, http.StatusUnauthorized, "Old password is incorrect")
+		response.Error(c, http.StatusUnauthorized, "Old password is incorrect")
 		return
 	}
 	
 	hashedPassword, err := utils.HashPassword(passwordUpdate.NewPassword)
 	if err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to hash new password")
+		response.Error(c, http.StatusInternalServerError, "Failed to hash new password")
 		return
 	}
 	
@@ -222,7 +223,7 @@ func UpdateUserPassword(c *gin.Context) {
 	user.HasDefaultPassword = false
 	
 	if err := database.DB.Save(&user).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, "Failed to update password")
+		response.Error(c, http.StatusInternalServerError, "Failed to update password")
 		return
 	}
 	

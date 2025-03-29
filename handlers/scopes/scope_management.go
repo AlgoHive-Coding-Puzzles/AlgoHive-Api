@@ -5,6 +5,7 @@ import (
 	"api/middleware"
 	"api/models"
 	"api/utils/permissions"
+	"api/utils/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,13 +28,13 @@ func GetAllScopes(c *gin.Context) {
 	}
 
 	if !permissions.RolesHavePermission(user.Roles, permissions.SCOPES) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
 		return
 	}
 
 	var scopes []models.Scope
 	if err := database.DB.Find(&scopes).Error; err != nil {
-		respondWithError(c, http.StatusInternalServerError, ErrFailedGetScopes)
+		response.Error(c, http.StatusInternalServerError, ErrFailedGetScopes)
 		return
 	}
 
@@ -59,7 +60,7 @@ func GetScope(c *gin.Context) {
 	}
 
 	if !permissions.RolesHavePermission(user.Roles, permissions.SCOPES) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionView)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionView)
 		return
 	}
 
@@ -67,7 +68,7 @@ func GetScope(c *gin.Context) {
 	var scope models.Scope
 	
 	if err := database.DB.Where("id = ?", scopeID).Preload("Catalogs").Preload("Roles").Preload("Groups").First(&scope).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrScopeNotFound)
+		response.Error(c, http.StatusNotFound, ErrScopeNotFound)
 		return
 	}
 
@@ -93,25 +94,25 @@ func CreateScope(c *gin.Context) {
 	}
 
 	if !permissions.RolesHavePermission(user.Roles, permissions.SCOPES) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionCreate)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionCreate)
 		return
 	}
 	
 	var createScopeReq CreateScopeRequest
 	if err := c.ShouldBindJSON(&createScopeReq); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// Check that catalogs exist
 	var catalogs []*models.Catalog
 	if err := database.DB.Where("id IN (?)", createScopeReq.CatalogsIds).Find(&catalogs).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrInvalidAPIEnvIDs)
+		response.Error(c, http.StatusBadRequest, ErrInvalidAPIEnvIDs)
 		return
 	}
 
 	if len(catalogs) != len(createScopeReq.CatalogsIds) {
-		respondWithError(c, http.StatusBadRequest, ErrInvalidAPIEnvIDs)
+		response.Error(c, http.StatusBadRequest, ErrInvalidAPIEnvIDs)
 		return
 	}
 
@@ -126,14 +127,14 @@ func CreateScope(c *gin.Context) {
 
 	if err := tx.Create(&scope).Error; err != nil {
 		tx.Rollback()
-		respondWithError(c, http.StatusInternalServerError, ErrFailedCreateScope+err.Error())
+		response.Error(c, http.StatusInternalServerError, ErrFailedCreateScope+err.Error())
 		return
 	}
 
 	if len(catalogs) > 0 {
 		if err := tx.Model(&scope).Association("Catalogs").Append(catalogs); err != nil {
 			tx.Rollback()
-			respondWithError(c, http.StatusInternalServerError, ErrFailedAssociateAPIEnv+err.Error())
+			response.Error(c, http.StatusInternalServerError, ErrFailedAssociateAPIEnv+err.Error())
 			return
 		}
 	}
@@ -162,32 +163,32 @@ func UpdateScope(c *gin.Context) {
 	}
 	
 	if !permissions.RolesHavePermission(user.Roles, permissions.SCOPES) {
-		respondWithError(c, http.StatusUnauthorized, ErrNoPermissionUpdate)
+		response.Error(c, http.StatusUnauthorized, ErrNoPermissionUpdate)
 		return
 	}
 
 	scopeID := c.Param("scope_id")
 	var scope models.Scope
 	if err := database.DB.Where("id = ?", scopeID).First(&scope).Error; err != nil {
-		respondWithError(c, http.StatusNotFound, ErrScopeNotFound)
+		response.Error(c, http.StatusNotFound, ErrScopeNotFound)
 		return
 	}
 
 	var updateScopeReq CreateScopeRequest
 	if err := c.ShouldBindJSON(&updateScopeReq); err != nil {
-		respondWithError(c, http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// Check that catalogs exist
 	var catalogs []*models.Catalog
 	if err := database.DB.Where("id IN (?)", updateScopeReq.CatalogsIds).Find(&catalogs).Error; err != nil {
-		respondWithError(c, http.StatusBadRequest, ErrInvalidAPIEnvIDs)
+		response.Error(c, http.StatusBadRequest, ErrInvalidAPIEnvIDs)
 		return
 	}
 
 	if len(catalogs) != len(updateScopeReq.CatalogsIds) {
-		respondWithError(c, http.StatusBadRequest, ErrInvalidAPIEnvIDs)
+		response.Error(c, http.StatusBadRequest, ErrInvalidAPIEnvIDs)
 		return
 	}
 
@@ -200,14 +201,14 @@ func UpdateScope(c *gin.Context) {
 	
 	if err := tx.Save(&scope).Error; err != nil {
 		tx.Rollback()
-		respondWithError(c, http.StatusInternalServerError, ErrFailedUpdateScope+err.Error())
+		response.Error(c, http.StatusInternalServerError, ErrFailedUpdateScope+err.Error())
 		return
 	}
 
 	// Update the associated catalogs
 	if err := tx.Model(&scope).Association("Catalogs").Replace(catalogs); err != nil {
 		tx.Rollback()
-		respondWithError(c, http.StatusInternalServerError, ErrFailedUpdateAssoc+err.Error())
+		response.Error(c, http.StatusInternalServerError, ErrFailedUpdateAssoc+err.Error())
 		return
 	}
 
@@ -234,26 +235,26 @@ func DeleteScope(c *gin.Context) {
     }
 
     if !permissions.RolesHavePermission(user.Roles, permissions.SCOPES) {
-        respondWithError(c, http.StatusUnauthorized, ErrNoPermissionDelete)
+        response.Error(c, http.StatusUnauthorized, ErrNoPermissionDelete)
         return
     }
 
     scopeID := c.Param("scope_id")
     var scope models.Scope
     if err := database.DB.Where("id = ?", scopeID).First(&scope).Error; err != nil {
-        respondWithError(c, http.StatusNotFound, ErrScopeNotFound)
+        response.Error(c, http.StatusNotFound, ErrScopeNotFound)
         return
     }
 
     // Check if any groups use this scope
     var groupCount int64
     if err := database.DB.Model(&models.Group{}).Where("scope_id = ?", scope.ID).Count(&groupCount).Error; err != nil {
-        respondWithError(c, http.StatusInternalServerError, "Failed to check for associated groups: "+err.Error())
+        response.Error(c, http.StatusInternalServerError, "Failed to check for associated groups: "+err.Error())
         return
     }
 
     if groupCount > 0 {
-        respondWithError(c, http.StatusConflict, "Cannot delete scope: it is still being used by groups")
+        response.Error(c, http.StatusConflict, "Cannot delete scope: it is still being used by groups")
         return
     }
 
@@ -263,21 +264,21 @@ func DeleteScope(c *gin.Context) {
     // Delete associations before deleting the scope
     if err := tx.Model(&scope).Association("Catalogs").Clear(); err != nil {
         tx.Rollback()
-        respondWithError(c, http.StatusInternalServerError, ErrFailedClearAssoc+err.Error())
+        response.Error(c, http.StatusInternalServerError, ErrFailedClearAssoc+err.Error())
         return
     }
 
     // Delete role associations
     if err := tx.Model(&scope).Association("Roles").Clear(); err != nil {
         tx.Rollback()
-        respondWithError(c, http.StatusInternalServerError, ErrFailedClearAssoc+err.Error())
+        response.Error(c, http.StatusInternalServerError, ErrFailedClearAssoc+err.Error())
         return
     }
 
     // Delete the scope
     if err := tx.Delete(&scope).Error; err != nil {
         tx.Rollback()
-        respondWithError(c, http.StatusInternalServerError, ErrFailedDeleteScope+err.Error())
+        response.Error(c, http.StatusInternalServerError, ErrFailedDeleteScope+err.Error())
         return
     }
 

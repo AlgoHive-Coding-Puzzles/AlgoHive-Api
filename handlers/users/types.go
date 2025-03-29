@@ -1,9 +1,5 @@
 package users
 
-import (
-	"github.com/gin-gonic/gin"
-)
-
 // Error messages constants
 const (
 	ErrNotFound               = "User not found"
@@ -54,9 +50,4 @@ type UserIdWithRoles struct {
 type PasswordUpdate struct {
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
-}
-
-// respondWithError sends a JSON response with an error message
-func respondWithError(c *gin.Context, status int, message string) {
-    c.JSON(status, gin.H{"error": message})
 }

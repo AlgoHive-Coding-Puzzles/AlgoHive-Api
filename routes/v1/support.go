@@ -10,7 +10,7 @@ import (
 type SupportRequest struct {
 	Name      string `json:"name" binding:"required"`
 	Email     string `json:"email" binding:"required,email"`
-	IssueType string `json:"issueType" binding:"required"`
+	IssueType string `json:"issue_type" binding:"required"`
 	Subject   string `json:"subject" binding:"required"`
 	Message   string `json:"message" binding:"required"`
 }

@@ -5163,7 +5163,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
-                "issueType",
+                "issue_type",
                 "message",
                 "name",
                 "subject"
@@ -5172,7 +5172,7 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "issueType": {
+                "issue_type": {
                     "type": "string"
                 },
                 "message": {

@@ -114,9 +114,17 @@ func GetAllRoles(c *gin.Context) {
     }
 
     var roles []models.Role
-    if err := database.DB.Preload("Scopes").Find(&roles).Error; err != nil {
+    if err := database.DB.Preload("Scopes").Preload("Users").Find(&roles).Error; err != nil {
         response.Error(c, http.StatusInternalServerError, "Failed to fetch roles")
         return
+    }
+
+    // Remove sensitive information from the users association
+    for i := range roles {
+        for j := range roles[i].Users {
+            roles[i].Users[j].Password = ""
+            roles[i].Users[j].Email = ""
+        }
     }
     
     c.JSON(http.StatusOK, roles)

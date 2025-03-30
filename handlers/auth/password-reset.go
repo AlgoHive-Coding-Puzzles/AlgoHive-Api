@@ -130,11 +130,11 @@ func ResetPassword(c *gin.Context) {
         return
     }
 
-    // Validate password
-    if err := utils.ValidatePassword(resetRequest.Password); err != nil {
-        response.Error(c, http.StatusBadRequest, err.Error())
-        return
-    }
+    // // Validate password
+    // if err := utils.ValidatePassword(resetRequest.Password); err != nil {
+    //     response.Error(c, http.StatusBadRequest, err.Error())
+    //     return
+    // }
 
     // Start a transaction
     tx := database.DB.WithContext(ctx).Begin()

@@ -21,8 +21,11 @@ type PuzzleResponse struct {
     ID               string `json:"id"`
     Language         string `json:"language"`
     Name             string `json:"name"`
+    Title            string `json:"title"`
+    Index            string `json:"index"`
     Obscure          string `json:"obscure"`
     UncompressedSize int    `json:"uncompressedSize"`
+    HivecraftVersion string `json:"hivecraftVersion"`
     UpdatedAt        string `json:"updatedAt"`
 }
 

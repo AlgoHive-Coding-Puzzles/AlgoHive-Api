@@ -25,7 +25,7 @@ var (
 // Client configuration with sensible defaults
 var (
     httpClient = &http.Client{
-        Timeout: 10 * time.Second,
+        Timeout: 30 * time.Second,
         Transport: &http.Transport{
             MaxIdleConns:        100,
             MaxIdleConnsPerHost: 20,

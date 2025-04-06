@@ -18,7 +18,7 @@ import (
 )
 
 const (
-    CompetitionTimeout        = 10 * time.Second
+    CompetitionTimeout        = 30 * time.Second
     PuzzleInputCacheKeyPrefix = "comp_puzzle_input:"
     PuzzleInputCacheDuration  = 30 * time.Minute
 )

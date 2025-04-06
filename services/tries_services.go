@@ -6,6 +6,7 @@ import (
 	"api/metrics"
 	"api/models"
 	"api/realtime"
+	"api/utils"
 	"errors"
 	"fmt"
 	"time"
@@ -209,7 +210,7 @@ func EndTry(competition models.Competition, puzzleID string, puzzleIndex int, st
     existingTry.LastMoveTime = &now
     existingTry.LastAnswer = &answer
     existingTry.Attempts++
-    existingTry.Score = 100 // Assuming score is set to 100 when ending the try
+    existingTry.Score = utils.CalculateScore(existingTry.PuzzleLvl, existingTry.PuzzleIndex, step, existingTry.StartTime, now, existingTry.Attempts)
     existingTry.EndTime = &now
     
     if err := tx.Save(&existingTry).Error; err != nil {

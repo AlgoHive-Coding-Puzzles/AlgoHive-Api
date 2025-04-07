@@ -4,6 +4,7 @@ import (
 	"api/database"
 	"api/middleware"
 	"api/models"
+	"api/utils"
 	"api/utils/permissions"
 	"api/utils/response"
 	"log"
@@ -257,6 +258,8 @@ func UpdateCompetition(c *gin.Context) {
 		return
 	}
 
+	utils.DisplayBodyContent(c)
+
 	var req UpdateCompetitionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, ErrInvalidRequest)
@@ -289,6 +292,17 @@ func UpdateCompetition(c *gin.Context) {
 	}
 	if req.Show != nil {
 		updateData["show"] = *req.Show
+	}
+	if len(req.GroupsIDs) > 0 {
+		var groups []models.Group
+		if err := database.DB.Where("id IN ?", req.GroupsIDs).Find(&groups).Error; err != nil {
+			response.Error(c, http.StatusBadRequest, ErrGroupNotFound)
+			return
+		}
+		if err := database.DB.Model(&competition).Association("Groups").Replace(groups); err != nil {
+			response.Error(c, http.StatusInternalServerError, ErrFailedAddGroup)
+			return
+		}
 	}
 
 	if err := database.DB.Model(&competition).Updates(updateData).Error; err != nil {

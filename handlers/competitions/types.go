@@ -52,6 +52,7 @@ type UpdateCompetitionRequest struct {
 	Description     string   `json:"description"`
 	CatalogTheme    string   `json:"catalog_theme"`
 	CatalogID       string   `json:"catalog_id"`
+	GroupsIDs	   []string `json:"groups_ids"`
 	Finished        *bool    `json:"finished"`
 	Show            *bool    `json:"show"`
 }

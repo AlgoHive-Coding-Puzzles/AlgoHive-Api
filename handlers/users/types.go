@@ -58,6 +58,10 @@ type UserProfileUpdate struct {
     GroupIDs  []string    `json:"groups_ids"`
 }
 
+// Create a struct to match the incoming JSON format
+type UserIDsRequest struct {
+	UserIDs []string `json:"user_ids"`
+}
 
 // PasswordUpdate represents a password update request
 type PasswordUpdate struct {

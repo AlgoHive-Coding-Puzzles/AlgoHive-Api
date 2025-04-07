@@ -403,11 +403,11 @@ func ImportUsersFromXLSXToGroup(c *gin.Context) {
         var lastNameIdx, firstNameIdx, emailIdx int = -1, -1, -1
         for i, cell := range rows[0] {
             switch cell {
-            case "Nom", "Nom de famille", "Last Name", "LastName":
+            case "Nom", "NOM", "Nom de famille", "Last Name", "LastName":
                 lastNameIdx = i
-            case "Prénom 1", "Prénom", "First Name", "FirstName":
+            case "Prénom 1", "Prénom", "PRENOM", "First Name", "FirstName":
                 firstNameIdx = i
-            case "E-mail personnel", "E-mail", "Email", "Personal Email":
+            case "E-mail personnel", "E-mail", "Email", "MAIL", "Personal Email":
                 emailIdx = i
             }
         }

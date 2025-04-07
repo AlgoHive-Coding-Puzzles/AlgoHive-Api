@@ -250,12 +250,16 @@ func BulkDeleteUsers(c *gin.Context) {
         return // Error already handled by middleware
     }
 
+    utils.DisplayBodyContent(c)
+
     // Parse user IDs from request body
-    var userIDs []string
-    if err := c.ShouldBindJSON(&userIDs); err != nil {
+    var reqBody UserIDsRequest
+    if err := c.ShouldBindJSON(&reqBody); err != nil {
         response.Error(c, http.StatusBadRequest, ErrInvalidUserIDs)
         return
     }
+    
+    userIDs := reqBody.UserIDs
     
     if len(userIDs) == 0 {
         response.Error(c, http.StatusBadRequest, ErrEmptyUserIDs)

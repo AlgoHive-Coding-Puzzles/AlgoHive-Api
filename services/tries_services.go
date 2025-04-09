@@ -210,7 +210,7 @@ func EndTry(competition models.Competition, puzzleID string, puzzleIndex int, st
     existingTry.LastMoveTime = &now
     existingTry.LastAnswer = &answer
     existingTry.Attempts++
-    existingTry.Score = utils.CalculateScore(existingTry.PuzzleLvl, existingTry.PuzzleIndex, step, existingTry.StartTime, now, existingTry.Attempts)
+    existingTry.Score = utils.CalculateScore(existingTry.PuzzleLvl, existingTry.PuzzleIndex + 1, step, existingTry.StartTime, now, existingTry.Attempts)
     existingTry.EndTime = &now
     
     if err := tx.Save(&existingTry).Error; err != nil {

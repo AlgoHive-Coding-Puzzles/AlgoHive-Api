@@ -5,7 +5,7 @@ import (
 )
 
 func CalculateScore(puzzleLvl string, puzzleIndex int, step int, startTime string, endTime string, attempts int) float64 {
-	baseScore := calculateBaseScore(puzzleLvl, puzzleIndex)
+	baseScore := calculateBaseScore(puzzleLvl, step)
 	scoreFromTime := CalculatePointsFromTimeSpent(puzzleLvl, startTime, endTime)
 	multiplier := CalculateMultiplier(puzzleIndex)
 	malus := CalculateMalusFromAttempts(attempts)
@@ -42,8 +42,8 @@ func calculateBaseScore(puzzleLvl string, step int) int {
 }
 
 // Return 100 + N percent of the base score
-func CalculateMultiplier(puzzleIndex int) int {
-	return 1 + (puzzleIndex / 100)
+func CalculateMultiplier(puzzleIndex int) float32 {
+	return 1 + float32(puzzleIndex)/100
 }
 
 func CalculateMalusFromAttempts(attemps int) int {

@@ -577,17 +577,17 @@ func GetUserCompetitionTries(c *gin.Context) {
     }
     
     // Try to get from cache first
-    cacheKey := UserTriesCacheKeyPrefix + competitionID + ":" + targetUserID
-    cachedData, err := database.REDIS.Get(ctx, cacheKey).Result()
-    if err == nil && cachedData != "" {
-        var tries []models.Try
-        if err := utils.UnmarshalJSON([]byte(cachedData), &tries); err == nil {
-            c.JSON(http.StatusOK, tries)
-            return
-        }
-        // If unmarshalling fails, continue with fetching from database
-        log.Printf("Failed to unmarshal cached user tries: %v", err)
-    }
+    // cacheKey := UserTriesCacheKeyPrefix + competitionID + ":" + targetUserID
+    // cachedData, err := database.REDIS.Get(ctx, cacheKey).Result()
+    // if err == nil && cachedData != "" {
+    //     var tries []models.Try
+    //     if err := utils.UnmarshalJSON([]byte(cachedData), &tries); err == nil {
+    //         c.JSON(http.StatusOK, tries)
+    //         return
+    //     }
+    //     // If unmarshalling fails, continue with fetching from database
+    //     log.Printf("Failed to unmarshal cached user tries: %v", err)
+    // }
 
     var tries []models.Try
     if err := database.DB.WithContext(ctx).
@@ -601,13 +601,13 @@ func GetUserCompetitionTries(c *gin.Context) {
     }
 
     // Cache the results for future requests
-    triesJSON, err := utils.MarshalJSON(tries)
-    if err == nil {
-        if err := database.REDIS.Set(ctx, cacheKey, string(triesJSON), TriesCacheDuration).Err(); err != nil {
-            // Log error but continue with response
-            log.Printf("Failed to cache user tries: %v", err)
-        }
-    }
+    // triesJSON, err := utils.MarshalJSON(tries)
+    // if err == nil {
+    //     if err := database.REDIS.Set(ctx, cacheKey, string(triesJSON), TriesCacheDuration).Err(); err != nil {
+    //         // Log error but continue with response
+    //         log.Printf("Failed to cache user tries: %v", err)
+    //     }
+    // }
 
     c.JSON(http.StatusOK, tries)
 }

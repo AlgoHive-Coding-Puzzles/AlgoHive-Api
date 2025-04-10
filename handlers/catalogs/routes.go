@@ -10,8 +10,8 @@ import (
 // r: the RouterGroup to which the routes are added
 func RegisterRoutes(r *gin.RouterGroup) {
     // Create rate limiters for potentially expensive endpoints
-    catalogRateLimiter := middleware.NewRateLimiter(20, 20) // 20 requests per minute with burst capacity
-	puzzleInputRateLimiter := middleware.NewRateLimiter(20, 20) // 10 requests per minute with burst capacity
+    catalogRateLimiter := middleware.NewRateLimiter(15000, 1000) // 20 requests per minute with burst capacity
+	puzzleInputRateLimiter := middleware.NewRateLimiter(15000, 1000) // 10 requests per minute with burst capacity
     
     // Create catalogs group and apply authentication middleware
     catalogs := r.Group("/catalogs")

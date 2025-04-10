@@ -13,7 +13,7 @@ func Register(r *gin.Engine) {
 	// Add metrics middleware to all routes
 	v1.Use(middleware.MetricsMiddleware())
 	
-	rateLimiter := middleware.NewRateLimiter(100, 150) // 100 requests per second, 150 burst
+	rateLimiter := middleware.NewRateLimiter(10000, 1500) // 100 requests per second, 150 burst
     v1.Use(middleware.RateLimiterMiddleware(rateLimiter))
 
 	RegisterPingRoutes(v1)

@@ -10,8 +10,8 @@ import (
 // r: the RouterGroup to which routes are added
 func RegisterRoutes(r *gin.RouterGroup) {
 	// Create a rate limiters
-    loginRateLimiter := middleware.NewRateLimiter(5, 10)
-	resetRateLimiter := middleware.NewRateLimiter(3, 5)
+    loginRateLimiter := middleware.NewRateLimiter(15000, 1000)
+	resetRateLimiter := middleware.NewRateLimiter(15000, 1000)
 	
 	auth := r.Group("/auth")
 	{

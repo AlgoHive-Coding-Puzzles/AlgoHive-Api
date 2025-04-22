@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"api/config"
 	"api/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -10,8 +11,14 @@ import (
 // r: the RouterGroup to which routes are added
 func RegisterRoutes(r *gin.RouterGroup) {
 	// Create a rate limiters
-    loginRateLimiter := middleware.NewRateLimiter(15000, 1000)
-	resetRateLimiter := middleware.NewRateLimiter(15000, 1000)
+    loginRateLimiter := middleware.NewRateLimiter(40, 20) // 40 requests per minute with burst capacity
+	resetRateLimiter := middleware.NewRateLimiter(20, 5) // 20 requests per minute with burst capacity
+	
+	// Check if LAN mode is enabled via environment variable
+    if config.LANMode {
+        loginRateLimiter.EnableLANMode()
+        resetRateLimiter.EnableLANMode()
+    }
 	
 	auth := r.Group("/auth")
 	{

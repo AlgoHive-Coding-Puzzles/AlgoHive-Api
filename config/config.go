@@ -32,6 +32,7 @@ var (
     MailPassword     string
     MailHost        string
     MailPort        string
+    LANMode         bool
 )
 
 func LoadConfig() {
@@ -59,6 +60,7 @@ func LoadConfig() {
     MailPassword = getEnv("MAIL_PASSWORD", "password")
     MailHost = getEnv("MAIL_HOST", "smtp.gmail.com")
     MailPort = getEnv("MAIL_PORT", "587")
+    LANMode = getEnv("LAN_MODE", "false") == "true"
 
     // Only log a warning if .env file couldn't be loaded
     if err != nil {

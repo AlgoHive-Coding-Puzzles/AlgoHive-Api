@@ -9,12 +9,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// LimitMode defines different methods to identify users for rate limiting
+type LimitMode int
+
+const (
+	IPOnly LimitMode = iota      // Use only IP address (default)
+	IPAndSession                 // Use IP + session ID (better for LAN environments)
+	UserBased                    // Use user ID (requires authentication)
+)
+
 type RateLimiter struct {
     visitors map[string]*Visitor
     mu       sync.Mutex
     rate     int           // Maximum requests per minute
     burst    int           // Burst capacity
     interval time.Duration // Refill interval
+    mode     LimitMode     // Identification mode for rate limiting
 }
 
 type Visitor struct {
@@ -28,14 +38,52 @@ func NewRateLimiter(rate int, burst int) *RateLimiter {
         rate:     rate,
         burst:    burst,
         interval: time.Minute,
+        mode:     IPOnly, // Default to IP-only mode
     }
 }
 
-func (rl *RateLimiter) getVisitor(ip string) *Visitor {
+// SetMode changes the identifier mode used by the rate limiter
+func (rl *RateLimiter) SetMode(mode LimitMode) {
+    rl.mu.Lock()
+    defer rl.mu.Unlock()
+    rl.mode = mode
+    // Clear existing visitors when changing mode
+    rl.visitors = make(map[string]*Visitor)
+}
+
+// getIdentifier returns the appropriate identifier for the current request based on mode
+func getIdentifier(c *gin.Context, mode LimitMode) string {
+    ip := c.ClientIP()
+    
+    switch mode {
+    case IPAndSession:
+        // Use IP + session ID if available
+        sessionID, _ := c.Cookie("session_id")
+        if sessionID != "" {
+            return ip + ":" + sessionID
+        }
+        // Fallback to IP + User-Agent if session not available
+        userAgent := c.Request.UserAgent()
+        return ip + ":" + userAgent
+        
+    case UserBased:
+        // Use user ID if authenticated
+        if userID, exists := c.Get("user_id"); exists {
+            return userID.(string)
+        }
+        // Fallback to IP if not authenticated
+        return ip
+        
+    default: // IPOnly
+        return ip
+    }
+}
+
+func (rl *RateLimiter) getVisitor(identifier string) *Visitor {
     rl.mu.Lock()
     defer rl.mu.Unlock()
 
-    if visitor, exists := rl.visitors[ip]; exists {
+    if visitor, exists := rl.visitors[identifier]; exists {
         return visitor
     }
 
@@ -43,12 +91,12 @@ func (rl *RateLimiter) getVisitor(ip string) *Visitor {
         tokens:      rl.burst,
         lastUpdated: time.Now(),
     }
-    rl.visitors[ip] = visitor
+    rl.visitors[identifier] = visitor
     return visitor
 }
 
-func (rl *RateLimiter) Allow(ip string) bool {
-    visitor := rl.getVisitor(ip)
+func (rl *RateLimiter) Allow(identifier string) bool {
+    visitor := rl.getVisitor(identifier)
 
     rl.mu.Lock()
     defer rl.mu.Unlock()
@@ -76,10 +124,10 @@ func (rl *RateLimiter) Allow(ip string) bool {
 
 func RateLimiterMiddleware(rl *RateLimiter) gin.HandlerFunc {
     return func(c *gin.Context) {
-        ip := c.ClientIP()
-        if !rl.Allow(ip) {
+        identifier := getIdentifier(c, rl.mode)
+        if !rl.Allow(identifier) {
             // Record rate limiter rejection in metrics
-            metrics.RateLimiterRejections.WithLabelValues(ip).Inc()
+            metrics.RateLimiterRejections.WithLabelValues(identifier).Inc()
             
             c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
                 "error": "Too many requests. Please try again later.",
@@ -88,4 +136,9 @@ func RateLimiterMiddleware(rl *RateLimiter) gin.HandlerFunc {
         }
         c.Next()
     }
+}
+
+// EnableLANMode configures the rate limiter to work better in LAN environments
+func (rl *RateLimiter) EnableLANMode() {
+    rl.SetMode(IPAndSession)
 }

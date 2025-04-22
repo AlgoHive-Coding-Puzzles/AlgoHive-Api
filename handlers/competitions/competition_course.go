@@ -132,7 +132,7 @@ func GetInputFromCompetition(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param competitionTry body CompetitionTry true "Competition try"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} PuzzleAnswerResponse
 // @Failure 400 {object} map[string]string
 // @Failure 403 {object} map[string]string
 // @Failure 429 {object} map[string]interface{}
@@ -195,35 +195,30 @@ func AnswerPuzzle(c *gin.Context) {
     }
 
     // Check rate limits
-    isLimited, remainingTime := services.CheckRateLimit(existingTry, config.DefaultRateLimitConfig)
-
-    if isLimited {
-        c.JSON(http.StatusTooManyRequests, gin.H{
-            "error": "Rate limit exceeded",
-            "wait_time_seconds": int(remainingTime.Seconds()),
-        })
-        return
-    }
+    isLimited, cooldownRemaining := services.CheckRateLimit(existingTry, config.DefaultRateLimitConfig)
 
     // Step 5: Validate the try
-    isCorrect, err := services.CheckPuzzleAnswer(
-        competition.CatalogID, 
-        competition.CatalogTheme, 
-        req.PuzzleId, 
-        req.PuzzleStep, 
-        user.ID, 
-        req.Answer,
-    )
+    isCorrect := false
+    if !isLimited && existingTry.EndTime == nil {
+        isCorrect, err := services.CheckPuzzleAnswer(
+            competition.CatalogID, 
+            competition.CatalogTheme, 
+            req.PuzzleId, 
+            req.PuzzleStep, 
+            user.ID, 
+            req.Answer,
+        )
     
-    if err != nil {
-        log.Printf("Failed to check solution: %v", err)
-        response.Error(c, http.StatusInternalServerError, "Failed to check solution")
-        return
-    }
+    
+        if err != nil {
+            log.Printf("Failed to check solution: %v", err)
+            response.Error(c, http.StatusInternalServerError, "Failed to check solution")
+            return
+        }
 
     // Step 6: Handle the try (create or update)
     if !isCorrect {
-        _, err := services.UpdateTry(
+        updatedTry, err := services.UpdateTry(
             competition, 
             req.PuzzleId, 
             req.PuzzleIndex, 
@@ -240,42 +235,48 @@ func AnswerPuzzle(c *gin.Context) {
         
         // Log unsuccessful attempt
         log.Printf("Incorrect answer for puzzle %s by user %s", req.PuzzleId, user.ID)
-    } else {
-        _, err := services.EndTry(
-            competition, 
-            req.PuzzleId, 
-            req.PuzzleIndex, 
-            req.PuzzleStep, 
-            user, 
-            req.Answer,
-        )
-        
-        if err != nil {
-            log.Printf("Failed to end try: %v", err)
-            response.Error(c, http.StatusInternalServerError, "Failed to end try")
-            return
-        }
-        
-        // Log successful completion
-        log.Printf("Correct answer for puzzle %s by user %s", req.PuzzleId, user.ID)
-        
-        // Invalidate any cached puzzle input
-        cacheKey := PuzzleInputCacheKeyPrefix + 
-            competition.CatalogID + ":" + 
-            competition.CatalogTheme + ":" + 
-            req.PuzzleId + ":" + 
-            user.ID
+
+        // Update the cooldown status
+        isLimited, cooldownRemaining = services.CheckRateLimit(updatedTry, config.DefaultRateLimitConfig)
+        } else {
+            _, err := services.EndTry(
+                competition, 
+                req.PuzzleId, 
+                req.PuzzleIndex, 
+                req.PuzzleStep, 
+                user, 
+                req.Answer,
+            )
             
-        if err := database.REDIS.Del(ctx, cacheKey).Err(); err != nil {
-            // Just log error, don't fail the request
-            log.Printf("Failed to invalidate puzzle input cache: %v", err)
+            if err != nil {
+                log.Printf("Failed to end try: %v", err)
+                response.Error(c, http.StatusInternalServerError, "Failed to end try")
+                return
+            }
+            
+            // Log successful completion
+            log.Printf("Correct answer for puzzle %s by user %s", req.PuzzleId, user.ID)
+            
+            // Invalidate any cached puzzle input
+            cacheKey := PuzzleInputCacheKeyPrefix + 
+                competition.CatalogID + ":" + 
+                competition.CatalogTheme + ":" + 
+                req.PuzzleId + ":" + 
+                user.ID
+                
+            if err := database.REDIS.Del(ctx, cacheKey).Err(); err != nil {
+                // Just log error, don't fail the request
+                log.Printf("Failed to invalidate puzzle input cache: %v", err)
+            }
         }
     }
 
-    c.JSON(http.StatusOK, gin.H{
-        "is_correct": isCorrect,
-        "puzzle_id": req.PuzzleId,
-        "puzzle_step": req.PuzzleStep,
+    c.JSON(http.StatusOK, PuzzleAnswerResponse{
+        IsCorrect:         isCorrect,
+        PuzzleId:          req.PuzzleId,
+        PuzzleStep:        req.PuzzleStep,
+        IsUnderCooldown:   isLimited,
+        CooldownRemaining: int(cooldownRemaining.Seconds()),
     })
 }
 
@@ -288,11 +289,11 @@ func AnswerPuzzle(c *gin.Context) {
 // @Param comptition_id path string true "Competition ID"
 // @Param puzzle_id path string true "Puzzle ID"
 // @Param puzzle_index path string true "Puzzle index"
-// @Success 200 {array} models.Try
+// @Success 200 {object} PuzzleTriesResponse
 // @Failure 400 {object} map[string]string
 // @Failure 403 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /competitions/{comptition_id}/puzzles/{puzzle_id}/{puzzle_index}/tries [get]
+// @Router /competitions/{comptition_id}/puzzles/{puzzle_id}/{puzzle_index} [get]
 // @Security Bearer
 func GetTriesFromCompetitonPuzzle(c *gin.Context) {
     // Create a timeout context
@@ -336,7 +337,70 @@ func GetTriesFromCompetitonPuzzle(c *gin.Context) {
         return
     }
 
-    c.JSON(http.StatusOK, tries)
+    // Step 4: Check cooldown status for the latest try
+    isUnderCooldown := false
+    var cooldownRemaining time.Duration
+    var lastTry *models.Try
+
+    if len(tries) > 0 {
+        // Find the latest try for the current puzzle/step
+        // We need to find the last step the user was working on
+        // First, group tries by step
+        triesByStep := make(map[int][]models.Try)
+        for _, t := range tries {
+            triesByStep[t.Step] = append(triesByStep[t.Step], t)
+        }
+        
+        // Find the highest step that doesn't have a completed try
+        highestIncompleteStep := 0
+        for step, stepTries := range triesByStep {
+            // Check if any try in this step is incomplete
+            incomplete := false
+            for _, t := range stepTries {
+                if t.EndTime == nil {
+                    incomplete = true
+                    break
+                }
+            }
+            
+            if incomplete && step > highestIncompleteStep {
+                highestIncompleteStep = step
+            }
+        }
+        
+        // If all steps are complete, use the highest step
+        if highestIncompleteStep == 0 {
+            for step := range triesByStep {
+                if step > highestIncompleteStep {
+                    highestIncompleteStep = step
+                }
+            }
+        }
+        
+        // Get the latest try for the identified step
+        if tries, ok := triesByStep[highestIncompleteStep]; ok && len(tries) > 0 {
+            lastTryIndex := len(tries) - 1
+            latestTry := tries[lastTryIndex]
+            lastTry = &latestTry
+            
+            // Check rate limits only if the try is not completed
+            if latestTry.EndTime == nil {
+                isUnderCooldown, cooldownRemaining = services.CheckRateLimit(latestTry, config.DefaultRateLimitConfig)
+                log.Printf("User %s is under cooldown for puzzle %s, step %d: %v",
+                    user.ID, puzzleID, highestIncompleteStep, cooldownRemaining)
+            }
+        }
+    }
+
+    // Create response with cooldown information
+    response := PuzzleTriesResponse{
+        Tries:             tries,
+        IsUnderCooldown:   isUnderCooldown,
+        CooldownRemaining: int(cooldownRemaining.Seconds()),
+        LastTry:           lastTry,
+    }
+
+    c.JSON(http.StatusOK, response)
 }
 
 // UserHasPermissionToViewPuzzle checks user's permissions

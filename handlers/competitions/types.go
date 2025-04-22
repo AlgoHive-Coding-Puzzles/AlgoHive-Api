@@ -1,5 +1,7 @@
 package competitions
 
+import "api/models"
+
 // Constants for error messages
 const (
 	ErrCompetitionNotFound      = "Competition not found"
@@ -85,4 +87,21 @@ type CompetitionTry struct {
 	PuzzleDifficulty string     `json:"puzzle_difficulty"`
 	UserID 		    string  `json:"user_id"`
 	Answer        string  `json:"solution"`
+}
+
+// PuzzleTriesResponse model for tries with cooldown information
+type PuzzleTriesResponse struct {
+	Tries            []models.Try `json:"tries"`
+	IsUnderCooldown  bool         `json:"is_under_cooldown"`
+	CooldownRemaining int         `json:"cooldown_remaining_seconds"`
+	LastTry          *models.Try  `json:"last_try,omitempty"`
+}
+
+// PuzzleAnswerResponse model for answering puzzles
+type PuzzleAnswerResponse struct {
+	IsCorrect        bool   `json:"is_correct"`
+	PuzzleId         string `json:"puzzle_id"`
+	PuzzleStep       int    `json:"puzzle_step"`
+	IsUnderCooldown  bool   `json:"is_under_cooldown"`
+	CooldownRemaining int   `json:"cooldown_remaining_seconds"`
 }

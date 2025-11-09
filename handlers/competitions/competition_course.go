@@ -200,7 +200,8 @@ func AnswerPuzzle(c *gin.Context) {
     // Step 5: Validate the try
     isCorrect := false
     if !isLimited && existingTry.EndTime == nil {
-        isCorrect, err := services.CheckPuzzleAnswer(
+        var err error
+        isCorrect, err = services.CheckPuzzleAnswer(
             competition.CatalogID, 
             competition.CatalogTheme, 
             req.PuzzleId, 

@@ -199,7 +199,12 @@ func AnswerPuzzle(c *gin.Context) {
 
     // Step 5: Validate the try
     isCorrect := false
-    if !isLimited && existingTry.EndTime == nil {
+    alreadySolved := existingTry.EndTime != nil
+    if alreadySolved {
+        // The puzzle step was already solved in a previous submission: report success
+        // without re-checking the answer or touching the score.
+        isCorrect = true
+    } else if !isLimited {
         var err error
         isCorrect, err = services.CheckPuzzleAnswer(
             competition.CatalogID, 
@@ -278,6 +283,7 @@ func AnswerPuzzle(c *gin.Context) {
         PuzzleStep:        req.PuzzleStep,
         IsUnderCooldown:   isLimited,
         CooldownRemaining: int(cooldownRemaining.Seconds()),
+        AlreadySolved:     alreadySolved,
     })
 }
 

@@ -97,16 +97,14 @@ func CalculatePointsFromTimeSpent(puzzleLvl string, startTime string, endTime st
 
 // Return a integer representing the time spent in minutes
 func calculateTimeSpent(startTime string, endTime string) int {
-	// Parse the time strings with the format "2006-01-02 15:04:05.000000"
-	layout := "2006-01-02 15:04:05.000000"
-	
-	start, err := time.Parse(layout, startTime)
+	// StartTime/EndTime are stored using time.RFC3339 (see services.TriggerPuzzleFirstTry/EndTry)
+	start, err := time.Parse(time.RFC3339, startTime)
 	if (err != nil) {
 		// If there's an error parsing the time, return 0
 		return 0
 	}
-	
-	end, err := time.Parse(layout, endTime)
+
+	end, err := time.Parse(time.RFC3339, endTime)
 	if (err != nil) {
 		// If there's an error parsing the time, return 0
 		return 0

@@ -26,6 +26,7 @@ func RegisterRoutes(r *gin.RouterGroup) {
 		auth.GET("/check", CheckAuth)
 		auth.POST("/register", RegisterUser)
 		auth.POST("/logout", Logout)
+		auth.POST("/refresh", RefreshToken)
 		auth.POST("/request-reset", middleware.RateLimiterMiddleware(resetRateLimiter), RequestPasswordReset)
 		auth.POST("/reset-password", ResetPassword)
 	}

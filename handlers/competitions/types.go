@@ -104,4 +104,5 @@ type PuzzleAnswerResponse struct {
 	PuzzleStep       int    `json:"puzzle_step"`
 	IsUnderCooldown  bool   `json:"is_under_cooldown"`
 	CooldownRemaining int   `json:"cooldown_remaining_seconds"`
+	AlreadySolved    bool   `json:"already_solved"`
 }

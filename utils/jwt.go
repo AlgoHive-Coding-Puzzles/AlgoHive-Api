@@ -2,6 +2,8 @@ package utils
 
 import (
 	"api/config"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"strings"
 	"time"
@@ -16,14 +18,28 @@ type Claims struct {
     jwt.RegisteredClaims
 }
 
+// newTokenID generates a random JWT ID (jti), so two tokens issued for the
+// same user within the same second (e.g. during a refresh) are never
+// identical and can be individually blacklisted.
+func newTokenID() string {
+    b := make([]byte, 16)
+    if _, err := rand.Read(b); err != nil {
+        // Extremely unlikely; fall back to a timestamp-derived value rather
+        // than failing token generation entirely.
+        return time.Now().Format(time.RFC3339Nano)
+    }
+    return hex.EncodeToString(b)
+}
+
 // GenerateJWT generates a JWT token for a given user
 func GenerateJWT(userID, email string) (string, error) {
     expirationTime := time.Now().Add(time.Duration(config.JWTExpiration) * time.Second)
-    
+
     claims := &Claims{
         UserID: userID,
         Email:  email,
         RegisteredClaims: jwt.RegisteredClaims{
+            ID:        newTokenID(),
             ExpiresAt: jwt.NewNumericDate(expirationTime),
             IssuedAt:  jwt.NewNumericDate(time.Now()),
         },

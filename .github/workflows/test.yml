@@ -1,0 +1,61 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Run unit tests with coverage
+        run: go test ./... -coverprofile=coverage.out
+
+      # All external dependencies (Postgres, Redis, BeeAPI) are mocked
+      # (sqlmock / redismock / httptest), so this suite never needs a
+      # database or network service to run.
+      - name: Enforce coverage floor (regression guard)
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          echo "Total coverage: ${COVERAGE}%"
+          # The report's target (rapport Bloc 2, section 7.3) is >80% overall,
+          # with >85%/>90%/>75% for services/middlewares/handlers respectively.
+          # Those per-layer targets are already met for the packages covered
+          # by this test suite (services, middleware, utils, handlers/auth,
+          # handlers/competitions' core flows). The remaining CRUD-heavy
+          # handler packages (groups/roles/scopes/users/catalogs/competition
+          # management) and generated/boilerplate code (docs, main, routes
+          # wiring) aren't covered yet, which keeps the repo-wide total well
+          # below 80% for now. This floor is a regression guard on today's
+          # baseline, not the report's aspirational target — raise it as
+          # more packages gain tests.
+          THRESHOLD=15
+          if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+            echo "Coverage $COVERAGE% is below the required $THRESHOLD% floor."
+            exit 1
+          fi
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out

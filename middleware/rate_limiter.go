@@ -2,7 +2,9 @@ package middleware
 
 import (
 	"api/metrics"
+	"math"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -128,7 +130,8 @@ func RateLimiterMiddleware(rl *RateLimiter) gin.HandlerFunc {
         if !rl.Allow(identifier) {
             // Record rate limiter rejection in metrics
             metrics.RateLimiterRejections.WithLabelValues(identifier).Inc()
-            
+
+            c.Header("Retry-After", strconv.Itoa(rl.RetryAfterSeconds()))
             c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
                 "error": "Too many requests. Please try again later.",
             })
@@ -136,6 +139,16 @@ func RateLimiterMiddleware(rl *RateLimiter) gin.HandlerFunc {
         }
         c.Next()
     }
+}
+
+// RetryAfterSeconds returns the number of seconds a client should wait before
+// at least one token is refilled, for use in a Retry-After header.
+func (rl *RateLimiter) RetryAfterSeconds() int {
+    if rl.rate <= 0 {
+        return int(rl.interval.Seconds())
+    }
+    secondsPerToken := rl.interval.Seconds() / float64(rl.rate)
+    return int(math.Ceil(secondsPerToken))
 }
 
 // EnableLANMode configures the rate limiter to work better in LAN environments
